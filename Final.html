@@ -1,0 +1,1809 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OfferLens — Offer Clarity Tool</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --ink:#0e0e0e;--paper:#faf9f7;--rule:#e5e3de;--muted:#8a8680;
+  --red:#c0392b;--green:#1a6b3c;--green-soft:#e8f5ee;
+  --amber:#92400e;--amber-soft:#fef3c7;
+  --blue:#1e3a5f;--blue-soft:#eff6ff;
+}
+body{background:var(--paper);color:var(--ink);font-family:'Manrope',sans-serif;min-height:100vh;display:flex;flex-direction:column}
+.H{display:none!important}
+
+/* NAV */
+nav{position:sticky;top:0;z-index:99;background:var(--paper);border-bottom:1px solid var(--rule);height:52px;display:flex;align-items:center;justify-content:space-between;padding:0 28px}
+.logo{font-family:'DM Serif Display',serif;font-size:19px;cursor:pointer;user-select:none}
+.logo b{color:var(--red)}
+#nbadge{font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--green);background:var(--green-soft);padding:3px 10px;border-radius:20px;display:none}
+.nav-right{display:flex;align-items:center;gap:12px}
+.nav-right span{font-size:10px;color:var(--muted);font-family:'DM Mono',monospace;letter-spacing:.06em}
+
+/* HOME */
+.screen{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 24px 80px;text-align:center;position:relative}
+.screen::before{content:'';position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse 600px 350px at 50% 40%,rgba(192,57,43,.04),transparent 70%)}
+.eyebrow{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.22em;text-transform:uppercase;color:var(--muted);margin-bottom:20px}
+h1{font-family:'DM Serif Display',serif;font-size:clamp(32px,6vw,58px);line-height:1.08;letter-spacing:-.02em;max-width:660px;margin-bottom:16px}
+h1 em{font-style:italic;color:var(--red)}
+ .sub{font-size:15px;line-height:1.7;color:#6b6b6b;max-width:720px;margin-bottom:18px;white-space:nowrap}
+.no-api-badge{display:inline-flex;align-items:center;gap:6px;background:#fff;border:1.5px solid var(--rule);border-radius:20px;padding:6px 14px;font-size:11px;font-weight:700;color:var(--green);margin-bottom:18px;letter-spacing:.04em}
+
+/* PANEL */
+.panel{width:100%;max-width:560px;margin-top:8px}
+.tabs{display:flex;border:1.5px solid var(--ink);border-radius:4px 4px 0 0;overflow:hidden;background:#fff}
+.tab{flex:1;padding:11px 14px;font-size:12px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;background:none;border:none;cursor:pointer;color:var(--muted);border-bottom:2px solid transparent;transition:all .12s;font-family:'Manrope',sans-serif}
+.tab.on{color:var(--ink);background:var(--paper);border-bottom-color:var(--ink)}
+.tab-sep{width:1px;background:var(--rule);flex-shrink:0}
+.dz{border:1.5px solid var(--ink);border-top:none;border-radius:0 0 4px 4px;background:#fff;padding:28px 20px;text-align:center;cursor:pointer;transition:background .15s;box-shadow:4px 4px 0 var(--ink)}
+.dz:hover,.dz.drag{background:#f5f3ee}
+.dz-ico{font-size:26px;margin-bottom:8px}
+.dz-title{font-size:14px;font-weight:700;margin-bottom:3px}
+.dz-sub{font-size:11px;color:var(--muted)}
+.dz-types{margin-top:7px;font-size:10px;color:var(--muted);font-family:'DM Mono',monospace}
+.pb{border:1.5px solid var(--ink);border-top:none;border-radius:0 0 4px 4px;background:#fff;box-shadow:4px 4px 0 var(--ink);overflow:hidden}
+.pb textarea{width:100%;padding:16px;font-family:'DM Mono',monospace;font-size:12px;border:none;outline:none;background:transparent;resize:vertical;min-height:160px;line-height:1.7}
+.pb textarea::placeholder{color:#bbb}
+.pb-foot{padding:9px 14px;border-top:1px solid var(--rule);display:flex;justify-content:space-between;align-items:center;background:var(--paper)}
+.chars{font-family:'DM Mono',monospace;font-size:10px;color:var(--muted)}
+.clr{font-size:10px;font-weight:700;color:var(--muted);background:none;border:none;cursor:pointer;text-transform:uppercase;letter-spacing:.06em}
+.go{width:100%;padding:15px;background:var(--ink);color:#fff;border:none;border-radius:4px;margin-top:12px;font-family:'Manrope',sans-serif;font-size:13px;font-weight:700;cursor:pointer;transition:background .15s}
+.go:hover:not(:disabled){background:var(--red)}
+.go:disabled{opacity:.3;cursor:not-allowed}
+.inp-hint{margin-top:10px;font-size:11px;color:var(--muted)}
+.inp-err{margin-top:8px;font-size:12px;color:var(--red);font-weight:600}
+
+/* LOADING */
+.ticker{display:flex;gap:6px;margin-bottom:16px}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--ink);animation:tk 1.2s ease-in-out infinite}
+.dot:nth-child(2){animation-delay:.2s}.dot:nth-child(3){animation-delay:.4s}
+@keyframes tk{0%,80%,100%{transform:scale(.6);opacity:.3}40%{transform:scale(1);opacity:1}}
+.lmsg{font-family:'DM Mono',monospace;font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);animation:fp 1.4s ease-in-out infinite}
+@keyframes fp{0%,100%{opacity:.4}50%{opacity:1}}
+
+/* RESULTS */
+.rr{max-width:760px;margin:0 auto;padding:42px 24px 80px;width:100%}
+.bk{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);cursor:pointer;margin-bottom:30px;background:none;border:none}
+.bk:hover{color:var(--ink)}
+
+/* Identity */
+.id-bar{margin-bottom:32px}
+.id-co{font-family:'DM Serif Display',serif;font-size:26px;letter-spacing:-.02em;margin-bottom:8px}
+.id-chips{display:flex;flex-wrap:wrap;gap:8px}
+.id-chip{display:inline-flex;align-items:center;gap:5px;background:#fff;border:1.5px solid var(--rule);border-radius:20px;padding:4px 12px;font-size:11px;font-weight:600;color:var(--muted)}
+
+/* WOW stack */
+.wow-lbl{font-family:'DM Serif Display',serif;font-size:14px;color:var(--muted);font-style:italic;margin-bottom:16px}
+.wow-stack{display:flex;flex-direction:column;gap:12px;margin-bottom:32px}
+
+/* Market Clarity */
+
+/* Market icon animations */
+.mc-side{position:relative}
+.mc-icon{width:44px;height:44px;display:inline-flex;align-items:center;justify-content:center}
+.mc-icon svg{width:44px;height:44px;display:block}
+.mc.cm .mc-icon{filter:drop-shadow(0 8px 16px rgba(34,197,94,.25))}
+.mc.lw .mc-icon{filter:drop-shadow(0 8px 16px rgba(217,119,6,.22))}
+.mc.un .mc-icon{filter:drop-shadow(0 8px 16px rgba(59,130,246,.18))}
+
+@keyframes mc-pop{0%{transform:scale(.72);opacity:0}60%{transform:scale(1.06);opacity:1}100%{transform:scale(1)}}
+@keyframes mc-draw{to{stroke-dashoffset:0}}
+@keyframes mc-pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.06)}}
+@keyframes mc-fade{0%{opacity:0;transform:translateY(4px)}100%{opacity:1;transform:translateY(0)}}
+
+.mc.cm .mc-icon svg{animation:mc-pop .55s cubic-bezier(.2,.8,.2,1) both}
+.mc.cm .mc-icon .mc-check{stroke-dasharray:48;stroke-dashoffset:48;animation:mc-draw .7s .12s ease forwards}
+.mc.lw .mc-icon svg{animation:mc-pulse 1.25s ease-in-out infinite}
+.mc.un .mc-icon svg{animation:mc-fade .5s ease both}
+
+.mc{border-radius:8px;display:grid;grid-template-columns:84px 1fr;border:2px solid transparent;overflow:hidden}
+.mc-side{display:flex;align-items:center;justify-content:center;font-size:50px;font-weight:900;padding:26px 0}
+.mc-body{padding:22px 26px 22px 0;display:flex;flex-direction:column;justify-content:center}
+.mc-ey{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:.22em;text-transform:uppercase;margin-bottom:7px}
+.mc-v{font-family:'DM Serif Display',serif;font-size:clamp(16px,2.8vw,23px);line-height:1.2;margin-bottom:7px}
+.mc-meta{font-size:11px;opacity:.65}
+.mc-badge{display:inline-flex;padding:3px 9px;border-radius:12px;font-size:10px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;margin-top:8px;width:fit-content}
+.mc.cm{background:#f0fbf5;border-color:#86efac}
+.mc.cm .mc-side{background:#22c55e;color:#fff}.mc.cm .mc-ey{color:#15803d}.mc.cm .mc-v{color:#0f3d1f}.mc.cm .mc-meta{color:#166534}.mc.cm .mc-badge{background:#dcfce7;color:#15803d}
+.mc.lw{background:#fffbeb;border-color:#fcd34d}
+.mc.lw .mc-side{background:#d97706;color:#fff}.mc.lw .mc-ey{color:#92400e}.mc.lw .mc-v{color:#451a03}.mc.lw .mc-meta{color:#78350f}.mc.lw .mc-badge{background:#fef3c7;color:#92400e}
+.mc.un{background:#eff6ff;border-color:#93c5fd}
+.mc.un .mc-side{background:#2563eb;color:#fff}.mc.un .mc-ey{color:#1e40af}.mc.un .mc-v{color:#1e3a5f}.mc.un .mc-meta{color:#1e40af}.mc.un .mc-badge{background:#dbeafe;color:#1e40af}
+
+/* Benchmark */
+.bench{background:#fff;border:1.5px solid var(--rule);border-radius:8px;padding:18px 22px}
+.bench-lbl{font-size:11px;font-weight:600;color:var(--muted);margin-bottom:10px}
+.bench-track{position:relative;height:7px;background:linear-gradient(90deg,#fde68a 0%,#86efac 100%);border-radius:4px;margin-bottom:5px}
+.bench-dot{position:absolute;top:50%;width:15px;height:15px;border-radius:50%;background:var(--red);border:2px solid #fff;box-shadow:0 0 0 2px var(--red);transform:translate(-50%,-50%);transition:left 1.2s cubic-bezier(.4,0,.2,1)}
+.bench-vals{display:flex;justify-content:space-between;font-family:'DM Mono',monospace;font-size:9px;color:var(--muted);margin-bottom:8px}
+.bench-res{font-size:12px;font-weight:700}
+.bench-note{font-size:10px;color:var(--muted);margin-top:3px;line-height:1.5}
+
+
+/* Hero (CTC + confidence) */
+.hero{background:#fff;border:1.5px solid var(--ink);border-radius:14px;padding:22px 24px;box-shadow:6px 6px 0 var(--ink);margin:10px 0 14px}
+.hero-top{display:flex;flex-wrap:wrap;gap:14px;align-items:flex-end;justify-content:space-between}
+
+.hero-orb{width:96px;height:96px;border-radius:999px;background:var(--ink);display:flex;align-items:center;justify-content:center;position:relative;flex:0 0 auto}
+.hero-orb.good{background:#16a34a}
+.hero-orb svg{display:block}
+.hero-orb .orb-ico{width:44px;height:44px}
+.hero-orb.good .orb-ico{filter:drop-shadow(0 6px 14px rgba(16,185,129,.25))}
+.hero-orb.warn .orb-ico{filter:drop-shadow(0 6px 14px rgba(245,158,11,.18))}
+.hero-orb.info .orb-ico{filter:drop-shadow(0 6px 14px rgba(148,163,184,.12))}
+.hero-orb .orb-check path{stroke-dasharray:60;stroke-dashoffset:60;animation:orbDraw .55s ease-out .18s forwards}
+@keyframes orbDraw{to{stroke-dashoffset:0}}
+.hero-orb.good::before,.hero-orb.good::after{content:"";position:absolute;inset:-10px;border-radius:999px;border:1px solid rgba(16,185,129,.35);opacity:0;animation:orbRing 1.0s ease-out .12s forwards}
+.hero-orb.good::after{inset:-18px;animation-delay:.18s;opacity:0}
+@keyframes orbRing{0%{transform:scale(.92);opacity:0}20%{opacity:.9}100%{transform:scale(1.08);opacity:0}}
+.hero-orb .confetti{position:absolute;inset:0;pointer-events:none;display:none}
+.hero-orb.good .confetti{display:block}
+.hero-orb .confetti i{position:absolute;width:6px;height:6px;border-radius:2px;background:rgba(16,185,129,.95);top:50%;left:50%;transform:translate(-50%,-50%) scale(.2);opacity:0;animation:confPop .9s ease-out .22s forwards}
+.hero-orb .confetti i:nth-child(2){background:rgba(245,158,11,.95);animation-delay:.26s}
+.hero-orb .confetti i:nth-child(3){background:rgba(59,130,246,.95);animation-delay:.30s}
+.hero-orb .confetti i:nth-child(4){background:rgba(236,72,153,.95);animation-delay:.34s}
+.hero-orb .confetti i:nth-child(5){background:rgba(148,163,184,.95);animation-delay:.38s}
+@keyframes confPop{
+  0%{opacity:0;transform:translate(-50%,-50%) scale(.2)}
+  15%{opacity:1}
+  100%{opacity:0;transform:translate(calc(-50% + var(--dx)),calc(-50% + var(--dy))) scale(1)}
+}
+
+.hero-ctc-lbl{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:.22em;text-transform:uppercase;color:var(--muted)}
+.hero-ctc-val{font-family:'Sora',sans-serif;font-size:28px;letter-spacing:-.02em;margin-top:6px}
+.hero-ctc-sub{font-size:12px;color:var(--muted);margin-top:2px}
+.hero-confWrap{margin-top:14px}
+.conf{margin:0;border-radius:12px}
+.conf-title{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:.22em;text-transform:uppercase;color:var(--muted)}
+.conf-line{font-size:16px;line-height:1.25;font-weight:700;margin-top:6px}
+.conf-sub{font-size:12px;color:var(--muted);margin-top:6px;line-height:1.4}
+
+/* Monthly fixed */
+.mfc{background:#fff;border:1.5px solid var(--ink);border-radius:8px;padding:26px 30px;box-shadow:5px 5px 0 var(--ink);display:grid;grid-template-columns:1fr auto;gap:0 22px;align-items:center}
+.mfc-lbl{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:.22em;text-transform:uppercase;color:var(--muted);margin-bottom:11px}
+.mfc-num{font-family:'DM Serif Display',serif;font-size:clamp(24px,5vw,44px);letter-spacing:-.03em;line-height:1;margin-bottom:11px}
+.mfc-num.nil{font-size:15px;color:var(--muted);font-style:italic;font-family:'Manrope',sans-serif;font-weight:400}
+.tax-pill{display:inline-flex;align-items:center;gap:5px;background:#fffbeb;border:1px solid #fcd34d;border-radius:20px;padding:4px 10px;font-size:10px;font-weight:700;color:#92400e}
+.mfc-note{font-size:11px;color:var(--muted);margin-top:7px;line-height:1.6}
+.score-col{display:flex;flex-direction:column;align-items:center;gap:4px;flex-shrink:0}
+.s-lbl{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.s-sub{font-size:10px;color:var(--muted);text-align:center;max-width:88px;margin-top:2px;line-height:1.4}
+
+/* Cards row */
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.rc{background:#fff;border:1.5px solid var(--rule);border-radius:8px;padding:16px 18px}
+.rc.gn{background:#f0faf5;border-color:rgba(26,107,60,.2)}
+.rc.am{background:var(--amber-soft);border-color:rgba(146,64,14,.2)}
+.rc.bl{background:var(--blue-soft);border-color:rgba(30,58,95,.15)}
+.rc.full{grid-column:1/-1}
+.rc-lbl{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
+.rc.gn .rc-lbl{color:var(--green)}.rc.am .rc-lbl{color:var(--amber)}.rc.bl .rc-lbl{color:var(--blue)}
+.rc-val{font-size:14px;font-weight:700;margin-bottom:2px;line-height:1.4}
+.rc-note{font-size:11px;color:var(--muted);line-height:1.5}
+
+/* Flags */
+.flags-card{background:#fff;border:1.5px solid var(--rule);border-radius:8px;padding:18px 22px}
+.flags-title{font-size:12px;font-weight:700;color:var(--ink);margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.flag-item{display:flex;align-items:flex-start;gap:9px;padding:8px 0;border-bottom:1px solid var(--rule);font-size:12px;line-height:1.55}
+.flag-item:last-child{border-bottom:none}
+.flag-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;margin-top:4px}
+.flag-dot.ok{background:#22c55e}.flag-dot.warn{background:#f59e0b}.flag-dot.miss{background:#e5e3de}
+
+/* Calculator */
+.calc-hd{display:flex;align-items:center;justify-content:space-between;width:100%;background:#fff;border:1.5px solid var(--rule);border-radius:8px;padding:15px 18px;cursor:pointer;text-align:left;transition:border-color .12s}
+.calc-hd:hover{border-color:var(--ink)}
+.calc-hd.op{border-radius:8px 8px 0 0;border-color:var(--ink)}
+.calc-title{font-size:13px;font-weight:700;display:flex;align-items:center;gap:8px}
+.calc-badge{font-size:10px;font-weight:400;color:var(--green);background:var(--green-soft);padding:2px 7px;border-radius:10px;font-family:'DM Mono',monospace}
+.calc-sub{font-size:11px;color:var(--muted);margin-top:2px}
+.chev{font-size:16px;color:var(--muted);transition:transform .2s}
+.chev.op{transform:rotate(180deg)}
+.calc-body{background:#faf9f7;border:1.5px solid var(--ink);border-top:none;border-radius:0 0 8px 8px;padding:20px}
+.c-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px}
+.c-lbl{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);margin-bottom:5px}
+.c-inp{width:100%;padding:9px 12px;border:1.5px solid var(--rule);border-radius:4px;font-family:'DM Mono',monospace;font-size:13px;color:var(--ink);background:#fff;outline:none;transition:border-color .12s}
+.c-inp:focus{border-color:var(--ink)}
+.c-sel{width:100%;padding:9px 12px;border:1.5px solid var(--rule);border-radius:4px;font-size:12px;background:#fff;outline:none;cursor:pointer;font-family:'Manrope',sans-serif}
+.c-result{background:#fff;border:1.5px solid var(--rule);border-radius:6px;padding:16px;margin-bottom:14px}
+.cr-lbl{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);margin-bottom:12px}
+.cr{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--rule);font-size:13px}
+.cr:last-child{border-bottom:none}
+.cr .k{color:var(--muted)}.cr .v{font-family:'DM Mono',monospace;font-weight:500}
+.cr.dd .v{color:var(--red)}
+.cr-total{display:flex;justify-content:space-between;padding-top:12px}
+.cr-total .k{font-size:14px;font-weight:700}.cr-total .v{font-family:'DM Serif Display',serif;font-size:24px;letter-spacing:-.02em;color:var(--green)}
+.c-disc{font-size:10px;color:var(--muted);line-height:1.6;border-left:2px solid var(--rule);padding-left:10px}
+
+/* Next steps */
+.ns-box{background:#fff;border:1.5px solid var(--ink);border-radius:6px;padding:22px 26px;box-shadow:4px 4px 0 var(--ink);margin-bottom:26px}
+.ns-title{font-family:'DM Serif Display',serif;font-size:19px;margin-bottom:14px}
+.ns-item{display:flex;align-items:flex-start;gap:10px;padding:9px 0;border-bottom:1px solid var(--rule);font-size:13px;line-height:1.6}
+.ns-item:last-child{border-bottom:none}
+.ns-ico{flex-shrink:0;font-size:14px;margin-top:1px}
+
+.consent{margin:14px auto 10px;max-width:720px;text-align:left;background:#fff;border:1px solid var(--rule);border-radius:14px;padding:12px 14px;box-shadow:0 1px 0 rgba(0,0,0,.03)}
+.ck{display:flex;gap:10px;align-items:flex-start;font-size:13px;line-height:1.4}
+.ck input{margin-top:2px}
+.ck b{font-weight:800}
+.ck-sub{margin-top:6px;color:var(--muted);font-size:11px;line-height:1.4}
+
+/* EMAIL TEMPLATES */
+.email-section{margin-bottom:40px}
+.email-tabs{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px}
+.etab{padding:7px 14px;border:1.5px solid var(--rule);border-radius:20px;font-size:11px;font-weight:700;cursor:pointer;background:#fff;transition:all .12s;font-family:'Manrope',sans-serif;letter-spacing:.02em}
+.etab:hover{border-color:var(--ink)}
+.etab.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+.email-card{background:#fff;border:1.5px solid var(--rule);border-radius:8px;overflow:hidden}
+.email-meta{padding:14px 18px;border-bottom:1px solid var(--rule);display:grid;grid-template-columns:auto 1fr;gap:6px 12px;font-size:12px}
+.email-meta-lbl{color:var(--muted);font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;padding-top:2px}
+.email-meta-val{color:var(--ink);font-weight:600}
+.email-body{padding:16px 18px;font-size:13px;line-height:1.8;color:var(--ink);white-space:pre-wrap;min-height:160px;font-family:'Manrope',sans-serif}
+.email-footer{padding:10px 18px;border-top:1px solid var(--rule);display:flex;gap:8px;background:#faf9f7}
+.ecopy{padding:8px 16px;background:var(--ink);color:#fff;border:none;border-radius:4px;font-family:'Manrope',sans-serif;font-size:12px;font-weight:700;cursor:pointer}
+.ecopy:hover{background:var(--red)}
+.ecopy.done{background:var(--green)}
+.edl{padding:8px 16px;background:#fff;color:var(--ink);border:1.5px solid var(--rule);border-radius:4px;font-family:'Manrope',sans-serif;font-size:12px;font-weight:700;cursor:pointer}
+.edl:hover{border-color:var(--ink)}
+
+/* ── Hero Clarity Box ── */
+.hero-clarity{background:#fff;border:1.5px solid var(--ink);border-radius:10px;padding:26px 28px 22px;box-shadow:4px 4px 0 var(--ink);margin-bottom:32px;animation:si .35s ease-out both}
+.hc-headline{font-family:'DM Serif Display',serif;font-size:clamp(16px,2.6vw,20px);line-height:1.35;letter-spacing:-.01em;color:var(--ink);margin-bottom:18px}
+.hc-bullets{display:flex;flex-direction:column;gap:8px}
+.hc-row{display:flex;align-items:flex-start;gap:10px;font-size:12px;line-height:1.5;color:var(--ink)}
+.hc-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;margin-top:4px}
+.hc-dot.ok{background:#22c55e}.hc-dot.warn{background:#f59e0b}.hc-dot.miss{background:#d1d5db}
+
+/* ── Decision Readiness ── */
+.dr-hd{font-family:'DM Serif Display',serif;font-size:19px;margin-bottom:20px}
+.dr-group{margin-bottom:18px}
+.dr-group-lbl{display:flex;align-items:center;gap:7px;font-family:'DM Mono',monospace;font-size:9px;letter-spacing:.2em;text-transform:uppercase;margin-bottom:9px}
+.dr-group-lbl.rdy{color:var(--green)}.dr-group-lbl.clr{color:var(--amber)}.dr-group-lbl.unk{color:var(--muted)}
+.dr-gdot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.dr-gdot.rdy{background:#22c55e}.dr-gdot.clr{background:#f59e0b}.dr-gdot.unk{background:#d1d5db}
+.dr-chips{display:flex;flex-wrap:wrap;gap:6px}
+.dr-chip{padding:5px 13px;border-radius:20px;font-size:11px;font-weight:600;border:1.5px solid;line-height:1}
+.dr-chip.rdy{background:#f0fbf5;border-color:#86efac;color:var(--green)}
+.dr-chip.clr{background:var(--amber-soft);border-color:#fcd34d;color:var(--amber)}
+.dr-chip.unk{background:#f5f5f4;border-color:var(--rule);color:var(--muted)}
+
+/* ── Take-home meaning sub-line ── */
+.th-meaning{font-size:10px;color:var(--muted);margin-top:3px;font-style:italic;line-height:1.45}
+
+/* ── Reassurance line ── */
+.reassurance{margin:28px 0 6px;padding:16px 20px;border-left:3px solid var(--rule);font-size:13px;color:var(--muted);line-height:1.75;font-style:italic}
+.reassurance strong{color:var(--ink);font-style:normal;font-weight:700}
+
+/* Details */
+.sec{margin-bottom:40px}
+.sec-h{display:flex;align-items:baseline;gap:10px;border-bottom:1px solid var(--rule);padding-bottom:8px;margin-bottom:18px}
+.sec-n{font-family:'DM Mono',monospace;font-size:10px;color:var(--muted);letter-spacing:.1em}
+.sec-t{font-family:'DM Serif Display',serif;font-size:21px}
+.drow{display:grid;grid-template-columns:1.2fr 1fr;gap:0 18px;padding:11px 0;border-bottom:1px solid var(--rule);animation:si .3s ease-out both}
+.drow:last-child{border-bottom:none}
+@keyframes si{from{opacity:0;transform:translateX(-6px)}to{opacity:1;transform:none}}
+.d-k{font-size:12px;font-weight:600;color:var(--muted)}
+.d-v{font-size:13px;text-align:right;line-height:1.4}
+.d-v.nil{color:var(--muted);font-style:italic;font-size:12px}
+.d-v.unc{color:var(--amber);font-size:12px}
+.d-v.ok{color:var(--green);font-size:12px;font-weight:600}
+
+/* Checklist */
+.chklist{display:flex;flex-direction:column;gap:6px}
+.ci{display:flex;align-items:flex-start;gap:8px;padding:8px 11px;border-radius:4px;border:1px solid;font-size:12px;line-height:1.5;animation:si .3s ease-out both}
+.ci.fd{background:#f0fbf4;border-color:#b7e4c7;color:#1a4731}
+.ci.uc{background:var(--amber-soft);border-color:#fcd34d;color:var(--amber)}
+.ci.ms{background:#f5f5f4;border-color:var(--rule);color:var(--muted)}
+
+/* CTA */
+.cta{border:1.5px solid var(--ink);border-radius:4px;padding:22px 26px;display:flex;align-items:center;justify-content:space-between;gap:18px;box-shadow:4px 4px 0 var(--ink);background:#fff;flex-wrap:wrap;margin-bottom:32px}
+.cta-h{font-family:'DM Serif Display',serif;font-size:18px;margin-bottom:5px}
+.cta-s{font-size:12px;color:var(--muted);max-width:320px;line-height:1.6}
+.cta-btn{padding:11px 20px;background:var(--ink);color:#fff;border:none;border-radius:3px;font-family:'Manrope',sans-serif;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap}
+.cta-btn:hover{background:var(--red)}
+
+.disc-txt{border:1px solid var(--rule);border-radius:4px;padding:12px 14px;font-size:11px;color:var(--muted);line-height:1.7;margin-top:32px}
+.divider{border:none;border-top:1px solid var(--rule);margin:36px 0}
+footer{border-top:1px solid var(--rule);padding:16px 28px;display:flex;align-items:center;justify-content:space-between;font-size:10px;color:var(--muted);flex-wrap:wrap;gap:6px;margin-top:auto}
+
+@media(max-width:620px){
+  .sub{white-space:normal}
+
+  nav{padding:0 16px}
+  .screen{padding:36px 16px 56px}
+  .mc{grid-template-columns:1fr}.mc-side{padding:14px 0;font-size:38px}.mc-body{padding:14px}
+  .mfc{grid-template-columns:1fr;padding:20px 16px}.score-col{display:none}
+  .row2{grid-template-columns:1fr}
+  .drow{grid-template-columns:1fr;gap:3px}.d-v{text-align:left}
+  .cta{flex-direction:column}.cta-btn{width:100%;text-align:center}
+  .c-grid{grid-template-columns:1fr}
+  .rr{padding:28px 14px 56px}
+  .email-tabs{gap:6px}.etab{font-size:10px;padding:6px 11px}
+}
+
+/* Confidence verdict */
+.conf{
+  margin:14px 0 10px;
+  padding:14px 16px;
+  border-radius:16px;
+  background:linear-gradient(180deg, rgba(34,197,94,.12), rgba(16,185,129,.08));
+  border:1px solid rgba(16,185,129,.25);
+  display:flex; gap:12px; align-items:flex-start;
+  box-shadow:0 8px 24px rgba(0,0,0,.05);
+}
+.conf.lw{background:linear-gradient(180deg, rgba(245,158,11,.14), rgba(251,191,36,.08));border-color:rgba(245,158,11,.28)}
+.conf.un{background:linear-gradient(180deg, rgba(148,163,184,.14), rgba(148,163,184,.08));border-color:rgba(148,163,184,.25)}
+.conf-ico{
+  width:34px;height:34px;border-radius:12px;
+  display:grid;place-items:center;flex:0 0 auto;
+  background:rgba(255,255,255,.65);
+  border:1px solid rgba(0,0,0,.06);
+}
+.conf-ico svg{width:18px;height:18px}
+.conf-title{font-size:13px;font-weight:700;letter-spacing:.02em}
+.conf-line{font-size:15px;font-weight:650;line-height:1.35;margin-top:2px}
+.conf-sub{font-size:12px;color:var(--muted);margin-top:4px}
+@keyframes popTick{0%{transform:scale(.6);opacity:0}60%{transform:scale(1.08);opacity:1}100%{transform:scale(1)}}
+.conf .tickPop{animation:popTick .55s cubic-bezier(.2,.9,.2,1) both}
+
+
+/* MODALS (Privacy / Disclaimer) */
+.modalBack{position:fixed;inset:0;background:rgba(14,14,14,.55);display:flex;align-items:center;justify-content:center;padding:18px;z-index:200}
+.modal{width:100%;max-width:620px;background:#fff;border:1.5px solid var(--ink);border-radius:12px;box-shadow:8px 8px 0 var(--ink);overflow:hidden}
+.modal-hd{padding:18px 20px;border-bottom:1px solid var(--rule);display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.modal-title{font-family:'DM Serif Display',serif;font-size:20px;letter-spacing:-.01em}
+.modal-x{border:1.5px solid var(--rule);background:#fff;border-radius:10px;width:34px;height:34px;cursor:pointer;font-size:16px;line-height:1}
+.modal-x:hover{border-color:var(--ink)}
+.modal-bd{padding:16px 20px 18px;font-size:13px;line-height:1.75;color:var(--ink)}
+.modal-bd p{margin:0 0 10px}
+.modal-bd ul{margin:10px 0 0 18px}
+.modal-bd li{margin:6px 0}
+.flinks{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.flink{background:none;border:none;padding:0;font:inherit;color:var(--muted);cursor:pointer;text-decoration:underline;text-underline-offset:3px}
+.flink:hover{color:var(--ink)}
+
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="logo" onclick="goHome()">Offer<b>Lens</b></div>
+  <div class="nav-right">
+    <span id="nbadge" style="display:none"></span>
+  </div>
+</nav>
+
+<!-- HOME -->
+<section class="screen" id="s-home">
+  <div class="eyebrow">100% Private · No API · No Server · No Data Stored</div>
+  <div class="no-api-badge">✓ Fully offline — rules-based engine</div>
+  
+<h1 style="text-align:center;">
+  Understand your<br>
+  <span style="color:var(--red);font-style:italic;">offer letter</span> clearly.
+</h1>
+<p class="sub">
+  What’s written. What’s unclear. What’s missing. Revealed quietly.
+</p>
+
+  <p class="sub"></p>
+  <div class="panel">
+    <div class="tabs">
+      <button class="tab on" id="t-up" onclick="switchTab('up')">📄 Upload PDF</button>
+      <div class="tab-sep"></div>
+      <button class="tab" id="t-pa" onclick="switchTab('pa')">✏️ Paste text</button>
+    </div>
+    <div id="z-up">
+      <div class="dz" id="dz"
+        ondragover="event.preventDefault();this.classList.add('drag')"
+        ondragleave="this.classList.remove('drag')"
+        ondrop="onDrop(event)"
+        onclick="if(!APP.fi)document.getElementById('finp').click()">
+        <input id="finp" type="file" accept=".pdf" style="display:none" onchange="onFile(event)">
+        <div id="dz-ico" class="dz-ico">📂</div>
+        <div id="dz-t" class="dz-title">Drop your offer letter PDF here</div>
+        <div id="dz-s" class="dz-sub">or click to browse</div>
+        <div id="dz-ty" class="dz-types">PDF files only</div>
+        <div id="dz-rm"></div>
+      </div>
+    </div>
+    <div id="z-pa" class="H">
+      <div class="pb">
+        <textarea id="ta" placeholder="Paste your full offer letter text here…" oninput="onPaste()"></textarea>
+        <div class="pb-foot">
+          <span class="chars" id="chars">0 characters</span>
+          <button class="clr" onclick="doClear()">Clear</button>
+        </div>
+      </div>
+    </div>
+    <div id="inp-err" class="inp-err H"></div>
+    <button class="go" id="go-btn" disabled onclick="showPreConfirm()">Analyze my offer →</button>
+    <div class="inp-hint">🔒 Your text stays on this device. <span style="white-space:nowrap">PDFs are processed locally using Mozilla PDF.js loaded from a public CDN</span> — no document content is transmitted. Pasted text works fully offline.</div>
+  </div>
+</section>
+
+<!-- PRE-CONFIRM -->
+<section class="screen H" id="s-pre" style="align-items:center">
+  <div style="width:100%;max-width:520px">
+    <div style="background:#fff;border:1.5px solid var(--ink);border-radius:10px;box-shadow:5px 5px 0 var(--ink);overflow:hidden">
+      <div style="padding:24px 28px 18px;border-bottom:1px solid var(--rule)">
+        <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:.22em;text-transform:uppercase;color:var(--muted);margin-bottom:8px">Before we begin</div>
+        <div style="font-family:'DM Serif Display',serif;font-size:22px;line-height:1.2">One quick check<em style="color:var(--red)">.</em></div>
+      </div>
+      <div style="padding:22px 28px 28px">
+        <div id="pre-docname" style="display:flex;align-items:center;gap:9px;background:var(--green-soft);border:1px solid rgba(26,107,60,.2);border-radius:6px;padding:10px 14px;font-size:12px;font-weight:700;color:var(--green);margin-bottom:22px">
+          <span>📄</span><span>—</span>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:18px" id="pre-checks">
+          <label id="pck0" style="display:flex;align-items:flex-start;gap:11px;padding:10px 13px;border:1.5px solid var(--rule);border-radius:5px;cursor:pointer;transition:border-color .12s">
+            <input type="checkbox" id="pc0" onchange="onPreChk()" style="margin-top:2px;accent-color:var(--green);flex-shrink:0">
+            <span style="font-size:12px;line-height:1.55">This is a <strong>job offer or employment letter</strong> I received</span>
+          </label>
+          <label id="pck1" style="display:flex;align-items:flex-start;gap:11px;padding:10px 13px;border:1.5px solid var(--rule);border-radius:5px;cursor:pointer;transition:border-color .12s">
+            <input type="checkbox" id="pc1" onchange="onPreChk()" style="margin-top:2px;accent-color:var(--green);flex-shrink:0">
+            <span style="font-size:12px;line-height:1.55">I understand this is <strong>informational only</strong> — not legal or HR advice</span>
+          </label>
+          <label id="pck2" style="display:flex;align-items:flex-start;gap:11px;padding:10px 13px;border:1.5px solid var(--rule);border-radius:5px;cursor:pointer;transition:border-color .12s">
+            <input type="checkbox" id="pc2" onchange="onPreChk()" style="margin-top:2px;accent-color:var(--green);flex-shrink:0">
+            <span style="font-size:12px;line-height:1.55">I know <strong>extracted figures should be verified</strong> against my original document</span>
+          </label>
+        </div>
+        <div style="background:var(--blue-soft);border:1px solid #bfdbfe;border-radius:5px;padding:9px 13px;font-size:11px;color:var(--blue);display:flex;gap:7px;margin-bottom:18px;line-height:1.6">
+          🔒 <span>Your document never leaves this browser tab. No server, no storage.</span>
+        </div>
+        <button id="precon-btn" disabled onclick="doAnalyze()" style="width:100%;padding:14px;background:var(--green);color:#fff;border:none;border-radius:5px;font-family:'Manrope',sans-serif;font-size:13px;font-weight:700;cursor:pointer;transition:background .12s;opacity:.35">Proceed to Analysis →</button>
+        <button onclick="goHome()" style="display:block;width:100%;margin-top:11px;background:none;border:none;color:var(--muted);font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;text-align:center;font-family:'Manrope',sans-serif">← Go back</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- LOADING -->
+<section class="screen H" id="s-load">
+  <div class="ticker"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
+  <div class="lmsg" id="lmsg">Extracting text from PDF…</div>
+</section>
+
+<!-- WOW -->
+<div class="H" id="s-wow" style="background:var(--paper)"><div class="rr" id="wow-inner"></div></div>
+<!-- DETAILS -->
+<div class="H" id="s-det" style="background:var(--paper)"><div class="rr" id="det-inner"></div></div>
+
+
+<!-- MODALS -->
+<div class="modalBack H" id="mb">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="mtitle">
+    <div class="modal-hd">
+      <div class="modal-title" id="mtitle">—</div>
+      <button class="modal-x" onclick="closeModal()" aria-label="Close">✕</button>
+    </div>
+    <div class="modal-bd" id="mbody"></div>
+  </div>
+</div>
+
+<footer>
+  <span>OfferLens</span>
+  <span class="flinks">
+    <span>Rules-based · No API · No data stored · Educational use only</span>
+    <button class="flink" onclick="openModal('privacy')">Privacy</button>
+    <button class="flink" onclick="openModal('disclaimer')">Disclaimer</button>
+  </span>
+</footer>
+
+<script>
+// ════════════════════════════════════════════════════════════════════
+// STATE
+// ════════════════════════════════════════════════════════════════════
+var APP={tab:'up',fi:null,pasteText:'',data:null,calcOpen:false,regime:'new',ded:150000,activeEmail:0,preOk:false};
+
+// ════════════════════════════════════════════════════════════════════
+// SCREENS
+// ════════════════════════════════════════════════════════════════════
+var SCREENS=['s-home','s-pre','s-load','s-wow','s-det'];
+function showScreen(id){
+  SCREENS.forEach(function(s){document.getElementById(s).classList.add('H');});
+  document.getElementById(id).classList.remove('H');
+  var b=document.getElementById('nbadge');
+  b.style.display='none';
+  if(id==='s-wow'){b.textContent='Snapshot ready';b.style.display='inline';}
+  if(id==='s-det'){b.textContent='Full details';b.style.display='inline';}
+  window.scrollTo(0,0);
+}
+
+// ════════════════════════════════════════════════════════════════════
+// MODALS (Privacy / Disclaimer)
+// ════════════════════════════════════════════════════════════════════
+function openModal(kind){
+  var mb=document.getElementById('mb');
+  var t=document.getElementById('mtitle');
+  var b=document.getElementById('mbody');
+  if(!mb||!t||!b) return;
+
+  if(kind==='privacy'){
+    t.textContent='Privacy (On‑device processing)';
+    b.innerHTML =
+      '<p><b>No upload. No server.</b> OfferLens runs entirely in your browser.</p>'+
+      '<ul>'+
+      '<li>Your pasted text and extracted PDF text stay in this tab.</li>'+
+      '<li>We do not store your document, and we do not send it anywhere.</li>'+
+      '<li>For PDF reading, the app loads Mozilla PDF.js from a public CDN; <b>your PDF content is not transmitted</b>.</li>'+
+      '</ul>'+
+      '<p style="margin-top:12px;color:var(--muted);font-size:12px">Tip: If you prefer full offline, use “Paste text”.</p>';
+  }else{
+    t.textContent='Disclaimer (Informational)';
+    b.innerHTML =
+      '<p>OfferLens provides <b>informational summaries</b> based on pattern recognition and simple calculations.</p>'+
+      '<ul>'+
+      '<li>This is <b>not</b> legal advice, tax advice, or HR advice.</li>'+
+      '<li>Figures can be missing, inferred, or misread — <b>verify against your original offer letter</b>.</li>'+
+      '<li>Market comparisons are <b>indicative heuristics</b>, not authoritative salary data.</li>'+
+      '</ul>'+
+      '<p style="margin-top:12px;color:var(--muted);font-size:12px">Use it to prepare questions for HR — calmly.</p>';
+  }
+
+  mb.classList.remove('H');
+  // close on backdrop click
+  mb.onclick=function(e){ if(e.target===mb) closeModal(); };
+  document.addEventListener('keydown', escClose);
+}
+function escClose(e){ if(e.key==='Escape') closeModal(); }
+function closeModal(){
+  var mb=document.getElementById('mb');
+  if(mb) mb.classList.add('H');
+  document.removeEventListener('keydown', escClose);
+}
+
+
+function goHome(){
+  APP.fi=null;APP.pasteText='';APP.data=null;APP.calcOpen=false;APP.preOk=false;
+  document.getElementById('ta').value='';
+  document.getElementById('chars').textContent='0 characters';
+  resetDZ();setErr('');
+  document.getElementById('go-btn').disabled=true;
+  // Reset pre-confirm checkboxes
+  ['pc0','pc1','pc2'].forEach(function(id){var el=document.getElementById(id);if(el)el.checked=false;});
+  var pb=document.getElementById('precon-btn');if(pb){pb.disabled=true;pb.style.opacity='.35';}
+  showScreen('s-home');
+}
+function showPreConfirm(){
+  if(!canGo())return;
+  var name=APP.tab==='up'&&APP.fi?APP.fi.name:'Pasted text ('+Math.round(APP.pasteText.length/100)/10+'k chars)';
+  var dn=document.getElementById('pre-docname');
+  if(dn)dn.innerHTML='<span>📄</span><span>'+esc(name)+'</span>';
+  showScreen('s-pre');
+}
+function onPreChk(){
+  var all=['pc0','pc1','pc2'].every(function(id){return document.getElementById(id).checked;});
+  var btn=document.getElementById('precon-btn');
+  if(btn){btn.disabled=!all;btn.style.opacity=all?'1':'.35';}
+}
+
+// ════════════════════════════════════════════════════════════════════
+// INPUT
+// ════════════════════════════════════════════════════════════════════
+function switchTab(t){
+  APP.tab=t;
+  document.getElementById('t-up').className='tab'+(t==='up'?' on':'');
+  document.getElementById('t-pa').className='tab'+(t==='pa'?' on':'');
+  document.getElementById('z-up').classList.toggle('H',t!=='up');
+  document.getElementById('z-pa').classList.toggle('H',t!=='pa');
+  updateBtn();
+}
+function canGo(){return APP.tab==='pa'?APP.pasteText.trim().length>30:APP.fi!==null;}
+function updateBtn(){document.getElementById('go-btn').disabled=!canGo();}
+function setErr(msg){var e=document.getElementById('inp-err');if(msg){e.textContent='⚠ '+msg;e.classList.remove('H');}else{e.textContent='';e.classList.add('H');}}
+function onDrop(ev){ev.preventDefault();document.getElementById('dz').classList.remove('drag');if(ev.dataTransfer.files[0])processFile(ev.dataTransfer.files[0]);}
+function onFile(ev){if(ev.target.files[0])processFile(ev.target.files[0]);}
+function processFile(file){
+  setErr('');
+  if(file.type!=='application/pdf'&&!file.name.endsWith('.pdf')){setErr('Please upload a PDF file.');return;}
+  setDZLoading(file.name);
+  extractPDF(file).then(function(text){
+    APP.fi={name:file.name,text:text};
+    setDZOk(file.name,'PDF · '+Math.round(text.length/100)/10+'k chars extracted');
+    updateBtn();
+  }).catch(function(e){setErr(e.message);resetDZ();});
+}
+function setDZLoading(name){document.getElementById('dz-ico').textContent='⏳';document.getElementById('dz-t').textContent='Reading '+name+'…';}
+function setDZOk(name,sub){
+  document.getElementById('dz-ico').textContent='✅';
+  document.getElementById('dz-t').textContent=name;
+  document.getElementById('dz-s').textContent=sub;
+  document.getElementById('dz-ty').style.display='none';
+  document.getElementById('dz-rm').innerHTML='<button style="font-size:11px;color:var(--muted);background:none;border:none;cursor:pointer;text-decoration:underline;margin-top:8px;font-family:Manrope,sans-serif" onclick="removeFile(event)">Remove file</button>';
+  document.getElementById('dz').onclick=null;
+}
+function removeFile(ev){ev.stopPropagation();APP.fi=null;resetDZ();document.getElementById('finp').value='';updateBtn();}
+function resetDZ(){
+  document.getElementById('dz-ico').textContent='📂';
+  document.getElementById('dz-t').textContent='Drop your offer letter PDF here';
+  document.getElementById('dz-s').textContent='or click to browse';
+  document.getElementById('dz-ty').style.display='';
+  document.getElementById('dz-rm').innerHTML='';
+  document.getElementById('dz').onclick=function(){if(!APP.fi)document.getElementById('finp').click();};
+}
+function onPaste(){APP.pasteText=document.getElementById('ta').value;var n=APP.pasteText.length;document.getElementById('chars').textContent=n+' characters'+(n>30?' · ready':'');updateBtn();}
+function doClear(){document.getElementById('ta').value='';APP.pasteText='';onPaste();}
+
+// ════════════════════════════════════════════════════════════════════
+// PDF EXTRACTION — PDF.js with proper CDN worker
+// ════════════════════════════════════════════════════════════════════
+var pdfReady=false;
+
+function mapPdfErr(err){
+  var msg=(err && (err.message||err.toString()))||'';
+  var low=String(msg).toLowerCase();
+  if(low.includes('password') || low.includes('encrypted') || low.includes('encryption')){
+    return new Error('This PDF appears password-protected or encrypted. Please export/print it as an unprotected PDF, or paste the text instead.');
+  }
+  if(low.includes('unsupported') && low.includes('encryption')){
+    return new Error('This PDF uses an unsupported encryption method. Please export/print it as a standard PDF, or paste the text instead.');
+  }
+  if(low.includes('invalid pdf') || low.includes('corrupt')){
+    return new Error('This PDF seems corrupted or not a standard PDF. Please re-download it, or paste the text instead.');
+  }
+  return new Error('Could not read this PDF. Try pasting the text instead. ('+msg+')');
+}
+
+function loadPDFJS(){
+  if(pdfReady)return Promise.resolve();
+  return new Promise(function(res,rej){
+    var s=document.createElement('script');
+    s.src='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
+    s.onload=function(){
+      window.pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+      pdfReady=true;res();
+    };
+    s.onerror=function(){rej(new Error('PDF library failed to load. Please check your internet connection or paste the text instead.'));};
+    document.head.appendChild(s);
+  });
+}
+function extractPDF(file){
+  return loadPDFJS().then(function(){return file.arrayBuffer();}).then(function(buf){
+    return window.pdfjsLib.getDocument({data:buf}).promise.catch(function(err){throw mapPdfErr(err);});
+  }).then(function(pdf){
+    var pages=[];for(var i=1;i<=pdf.numPages;i++)pages.push(i);
+    return pages.reduce(function(chain,n){
+      return chain.then(function(txt){
+        return pdf.getPage(n).then(function(pg){
+          return pg.getTextContent().then(function(ct){
+            return txt+ct.items.map(function(x){return x.str;}).join(' ')+'\n';
+          });
+        });
+      });
+    },Promise.resolve(''));
+  }).then(function(t){
+    var clean=t.trim();
+    if(!clean)throw new Error('No readable text in this PDF. Try pasting the text instead.');
+    return clean;
+  });
+}
+
+// ════════════════════════════════════════════════════════════════════
+// RULES ENGINE — extracts all fields from raw text
+// ════════════════════════════════════════════════════════════════════
+function analyze(raw){
+  var t=raw.toLowerCase();
+  var result={};
+
+  // ── COMPANY ──
+  result.company=extractCompany(raw,t);
+
+  // ── ROLE ──
+  result.role=extractRole(raw,t);
+
+  // ── LOCATION ──
+  result.location=extractLocation(raw,t);
+
+  // ── SALARY ──
+  result.salary=extractSalary(raw,t);
+
+  // ── WORK CONDITIONS ──
+  result.work=extractWork(raw,t);
+
+  // ── EXIT TERMS ──
+  result.exit=extractExit(raw,t);
+
+  // ── OTHER BENEFITS ──
+  result.other=extractOther(raw,t);
+
+  // ── SCORING ──
+  result.score=computeScore(result);
+
+  // ── MARKET CLARITY ──
+  result.market=computeMarket(result);
+
+  // ── CHECKLIST ──
+  result.checklist=buildChecklist(result);
+
+  // ── TAX CALC ──
+  result.tax=computeTax(result.salary,APP.regime,APP.ded);
+
+  return result;
+}
+
+// ── EXTRACTION HELPERS ──────────────────────────────────────────────
+function firstMatch(raw,patterns){
+  for(var i=0;i<patterns.length;i++){
+    var m=raw.match(patterns[i]);
+    if(m)return m[1]?m[1].trim():m[0].trim();
+  }
+  return null;
+}
+
+function extractCompany(raw,t){
+  // Look for common letterhead patterns
+  var patterns=[
+    /^([A-Z][A-Za-z\s&.,()'-]{2,60}(?:Limited|Ltd\.?|Pvt\.?|Private|Technologies|Tech|Solutions|Services|Systems|Consulting|Associates|Group|Corporation|Corp|Inc\.?|LLP|BPO|IT))\b/m,
+    /(?:from|issued by|on behalf of)\s*:?\s*([A-Z][A-Za-z\s&.,'-]{3,60}(?:Limited|Ltd|Pvt|Technologies|Solutions|Services))/i,
+    /([A-Z][A-Za-z\s&.,'-]{2,50}(?:Limited|Ltd\.?|Pvt\.?|Technologies|Tech|Solutions|Services|Systems|Consulting|Associates|Corporation|Inc|LLP))/,
+  ];
+  var c=firstMatch(raw,patterns);
+  if(!c){
+    // Try first capitalized multi-word line
+    var lines=raw.split('\n');
+    for(var i=0;i<Math.min(10,lines.length);i++){
+      var line=lines[i].trim();
+      if(line.length>4&&line.length<80&&/^[A-Z]/.test(line)&&!/^(dear|this|we|the|date|ref|sub|offer|appointment|letter)/i.test(line)){
+        c=line;break;
+      }
+    }
+  }
+  return c?c.replace(/\s+/g,' ').substring(0,80):null;
+}
+
+function extractRole(raw,t){
+  return firstMatch(raw,[
+    /(?:designation|position|role|post|title|joining as|appointed as)\s*:?\s*([A-Za-z\s\/-]{3,60}?)(?:\n|,|with|at|in the|on a|effective)/i,
+    /(?:dear|congratulations)[^,\n]*,\s*we are pleased to offer you the position of\s+([A-Za-z\s\/-]{3,50})/i,
+    /offer.*?(?:of employment|letter).*?as\s+(?:a\s+)?([A-Za-z\s\/-]{3,50})/i,
+  ]);
+}
+
+function extractLocation(raw,t){
+  var cities=['mumbai','delhi','bangalore','bengaluru','hyderabad','chennai','pune','kolkata','noida','gurgaon','gurugram','ahmedabad','jaipur','lucknow','bhopal','chandigarh','kochi','coimbatore','nagpur','indore','surat','vadodara','thane','navi mumbai','greater noida'];
+  for(var i=0;i<cities.length;i++){
+    if(t.indexOf(cities[i])!==-1){
+      var city=cities[i].charAt(0).toUpperCase()+cities[i].slice(1);
+      return city;
+    }
+  }
+  return firstMatch(raw,[
+    /(?:place of posting|work location|office location|base location|place of work)\s*:?\s*([A-Za-z\s,()-]{3,50}?)(?:\n|\.)/i,
+    /(?:located at|posted at|based at|based in)\s+([A-Za-z\s,()-]{3,50}?)(?:\n|,|\.)/i,
+  ]);
+}
+
+function extractSalary(raw,t){
+  var sal={};
+
+  // Try to find CTC / Annual amounts
+  var ctcMatch=raw.match(/(?:total\s+)?(?:ctc|cost\s+to\s+company|annual\s+(?:ctc|compensation|salary|package|remuneration|pay)|gross\s+annual|yearly\s+(?:ctc|salary|pay|package))\s*(?:will be|is|:|-|of)?\s*(?:rs\.?|inr|₹)?\s*([\d,]+(?:\.\d+)?)\s*(?:\/?\s*(?:per\s*)?(?:annum|year|pa|p\.?a\.?|annually))?/i);
+  if(!ctcMatch){ctcMatch=raw.match(/(?:rs\.?|inr|₹)\s*([\d,]+(?:\.\d+)?)\s*(?:\/?\s*(?:per\s*)?(?:annum|year|pa|p\.?a\.?))/i);}
+  
+  // LPA patterns
+  var lpaMatch=raw.match(/([\d]+(?:\.\d+)?)\s*(?:lpa|l\.p\.a|lakh(?:s)?\s+per\s+annum|lakhs?\s+per\s+year|lakhs?\s+p\.?a\.?)/i);
+  
+  if(lpaMatch){
+    var lpa=parseFloat(lpaMatch[1]);
+    sal.annualFixed=lpa+' LPA';
+    sal.annualFixedNum=lpa*100000;
+    sal.monthlyGross=Math.round(lpa*100000/12);
+  } else if(ctcMatch){
+    var raw_num=parseFloat(ctcMatch[1].replace(/,/g,''));
+    // Detect if it's in lakhs (common for Indian offers) or full rupees
+    if(raw_num<1000){sal.annualFixed=raw_num+' LPA';sal.annualFixedNum=raw_num*100000;}
+    else if(raw_num<100000){sal.annualFixed='Rs. '+raw_num.toLocaleString('en-IN')+' (verify unit)';sal.annualFixedNum=raw_num*100;}
+    else{sal.annualFixed='Rs. '+raw_num.toLocaleString('en-IN');sal.annualFixedNum=raw_num;}
+    sal.monthlyGross=Math.round(sal.annualFixedNum/12);
+  }
+
+  // Monthly fixed
+  var mfMatch=raw.match(/(?:monthly\s+(?:fixed|gross|basic|salary|ctc|pay|compensation)|fixed\s+monthly\s+(?:salary|pay|gross))\s*(?:of|:|-|is|will be)?\s*(?:rs\.?|inr|₹)?\s*([\d,]+(?:\.\d+)?)/i);
+  if(mfMatch){
+    var mf=parseFloat(mfMatch[1].replace(/,/g,''));
+    if(mf>1000){sal.monthlyFixed='Rs. '+mf.toLocaleString('en-IN');sal.monthlyFixedNum=mf;if(!sal.monthlyGross)sal.monthlyGross=mf;}
+  }
+
+  // Basic salary
+  var basicMatch=raw.match(/(?:basic\s+(?:salary|pay|wage))\s*(?:of|:|-|is|will be)?\s*(?:rs\.?|inr|₹)?\s*([\d,]+(?:\.\d+)?)/i);
+  if(basicMatch){var b=parseFloat(basicMatch[1].replace(/,/g,''));if(b>1000){sal.basic='Rs. '+b.toLocaleString('en-IN');sal.basicNum=b;}}
+  if(!sal.basicNum&&sal.annualFixedNum){sal.basicNum=Math.round(sal.annualFixedNum*0.35/12);sal.basic='Rs. '+sal.basicNum.toLocaleString('en-IN')+' (est.)';}
+
+  // Variable / Performance pay
+  var varMatch=raw.match(/(?:variable\s+pay|performance\s+(?:pay|bonus|incentive)|annual\s+bonus|variable\s+component)\s*(?:of|:|-|is|up to|upto)?\s*(?:rs\.?|inr|₹)?\s*([\d,]+(?:\.\d+)?)/i);
+  var varPctMatch=raw.match(/(?:variable|performance)\s+(?:pay|bonus).*?([\d]+(?:\.\d+)?)\s*%/i);
+  if(varMatch){sal.variable='Rs. '+parseFloat(varMatch[1].replace(/,/g,'')).toLocaleString('en-IN');}
+  if(varPctMatch){sal.variablePct=varPctMatch[1]+'%';}
+  if(!sal.variable&&/(?:variable|performance\s+(?:pay|bonus|linked))/i.test(raw)){sal.variable='Mentioned — amount not specified';sal.variableUnclear=true;}
+
+  // PF
+  if(/provident\s+fund|pf\s+contribution|epf/i.test(raw)){
+    var pfMatch=raw.match(/(?:pf|provident\s+fund).*?([\d]+(?:\.\d+)?)\s*%/i);
+    sal.pf=pfMatch?pfMatch[1]+'% of basic':'As per PF Act (12% of basic)';
+    sal.pfNum=sal.basicNum?Math.round(sal.basicNum*0.12):null;
+  }
+
+  // Gratuity
+  if(/gratuity/i.test(raw))sal.gratuity='Mentioned (as per Gratuity Act)';
+
+  // HRA
+  var hraMatch=raw.match(/hra|house\s+rent\s+allowance/i);
+  if(hraMatch){
+    var hraPct=raw.match(/hra.*?([\d]+)\s*%/i);
+    sal.hra=hraPct?hraPct[1]+'% of basic':'Included in CTC';
+  }
+
+  // Special allowance
+  var specMatch=raw.match(/special\s+allowance\s*(?:of|:|-|is)?\s*(?:rs\.?|inr|₹)?\s*([\d,]+)/i);
+  if(specMatch)sal.specialAllowance='Rs. '+parseFloat(specMatch[1].replace(/,/g,'')).toLocaleString('en-IN');
+
+  // Stock/ESOP
+  if(/esop|rsu|stock\s+option|equity/i.test(raw))sal.esop='Mentioned — details not specified';
+
+  return sal;
+}
+
+function extractWork(raw,t){
+  var w={};
+
+  // Work mode
+  if(/work\s+from\s+home|wfh|remote\s+work|fully\s+remote/i.test(raw))w.mode='Remote / Work from Home';
+  else if(/hybrid/i.test(raw))w.mode='Hybrid';
+  else if(/work\s+from\s+office|wfo|on.?site|office.?based/i.test(raw))w.mode='Work from Office';
+
+  // Working hours
+  var hrMatch=raw.match(/(\d+)\s*(?:hours?|hrs?)(?:\s*per|\s*a|\s*\/)\s*(?:day|week)/i);
+  if(hrMatch)w.hours=hrMatch[1]+' hours per '+(raw.match(/per day|\/day|a day/i)?'day':'week');
+  var shiftMatch=raw.match(/(\d{1,2}:\d{2}\s*(?:am|pm)?)\s*(?:to|-)\s*(\d{1,2}:\d{2}\s*(?:am|pm)?)/i);
+  if(shiftMatch)w.shift=shiftMatch[1]+' to '+shiftMatch[2];
+
+  // Weekend
+  if(/5\s+days?\s+(?:working|week)|monday\s+to\s+friday|mon.fri/i.test(raw))w.weekends='5-day work week (Sat-Sun off)';
+  else if(/6\s+days?\s+(?:working|week)|monday\s+to\s+saturday/i.test(raw))w.weekends='6-day work week';
+  else if(/saturday.*off|alternate.*saturday/i.test(raw))w.weekends='Alternate Saturdays off';
+
+  // Night shift
+  if(/night\s+shift/i.test(raw)){
+    var nsAllow=raw.match(/night\s+shift\s+allowance.*?([\d,]+)/i);
+    w.nightShift=nsAllow?'Applicable — Rs. '+parseFloat(nsAllow[1].replace(/,/g,'')).toLocaleString('en-IN'):'Mentioned — amount not specified';
+  }
+
+  // Transport/Cab
+  if(/cab\s+facility|transport\s+allowance|pick.up.*drop|shuttle/i.test(raw)){
+    var cabAmt=raw.match(/(?:cab|transport).*?([\d,]+)/i);
+    w.transport=cabAmt?'Rs. '+parseFloat(cabAmt[1].replace(/,/g,'')).toLocaleString('en-IN')+' transport allowance':'Cab facility mentioned';
+  }
+
+  return w;
+}
+
+function extractExit(raw,t){
+  var ex={};
+
+  // Probation
+  var probMatch=raw.match(/probation(?:ary)?\s+period(?:\s+of)?\s*([\d]+)\s*(month|week|day|year)/i);
+  if(probMatch)ex.probation=probMatch[1]+' '+probMatch[2]+'s';
+  else if(/probation/i.test(raw))ex.probation='Mentioned — duration not specified';
+
+  // Notice period
+  var noticeMatch=raw.match(/notice\s+period(?:\s+of)?\s*([\d]+)\s*(month|week|day)/i);
+  if(!noticeMatch)noticeMatch=raw.match(/([\d]+)\s*(month|week|day)(?:'s)?\s+notice/i);
+  if(noticeMatch)ex.notice=noticeMatch[1]+' '+noticeMatch[2]+'s';
+  else if(/notice\s+period/i.test(raw))ex.notice='Mentioned — duration not specified';
+
+  // Bond / Service agreement
+  var bondMatch=raw.match(/(?:service\s+)?bond(?:\s+period)?(?:\s+of)?\s*([\d]+)\s*(month|year)/i);
+  if(!bondMatch)bondMatch=raw.match(/(?:minimum\s+)?service\s+(?:period|agreement)(?:\s+of)?\s*([\d]+)\s*(month|year)/i);
+  if(bondMatch){ex.bond=bondMatch[1]+' '+bondMatch[2]+'s';
+    // Recovery amount
+    var bondAmt=raw.match(/(?:bond|service\s+agreement).*?(?:rs\.?|inr|₹)\s*([\d,]+)/i);
+    if(bondAmt)ex.bondAmt='Rs. '+parseFloat(bondAmt[1].replace(/,/g,'')).toLocaleString('en-IN')+' recovery if broken';
+  }
+  else if(/bond|service\s+agreement|lock.in/i.test(raw))ex.bond='Mentioned — terms not specified';
+
+  // Termination clause
+  if(/termination/i.test(raw))ex.termination='Termination clause present';
+
+  return ex;
+}
+
+function extractOther(raw,t){
+  var o={};
+
+  // Joining date
+  var dtPatterns=[
+    /(?:date of joining|joining date|commence|start date|effective from|effective date)\s*:?\s*([\d]{1,2}[\s\/\-\.]+(?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*[\s\/\-\.]*[\d]{2,4})/i,
+    /(?:date of joining|joining date)\s*:?\s*([\d]{1,2}[\/\-][\d]{1,2}[\/\-][\d]{2,4})/i,
+    /(?:joining on|join on)\s*([\d]{1,2}[\/\-][\d]{1,2}[\/\-][\d]{2,4})/i,
+  ];
+  o.startDate=firstMatch(raw,dtPatterns);
+
+  // Insurance
+  if(/mediclaim|medical\s+insurance|health\s+insurance|group\s+(?:health|medical)|life\s+insurance|gmca|gmc\b/i.test(raw)){
+    var insAmt=raw.match(/(?:mediclaim|medical\s+insurance|health\s+insurance).*?(?:rs\.?|inr|₹)?\s*([\d,]+)/i);
+    o.insurance=insAmt?'Rs. '+parseFloat(insAmt[1].replace(/,/g,'')).toLocaleString('en-IN')+' cover':'Medical insurance included';
+  }
+
+  // Leaves
+  var plMatch=raw.match(/([\d]+)\s*(?:days?|leaves?)\s*(?:of\s+)?(?:paid\s+)?(?:annual|privilege|casual|earned)\s+leave/i);
+  if(!plMatch)plMatch=raw.match(/(?:annual|privilege|paid)\s+leave\s*(?:of|:)?\s*([\d]+)\s*days?/i);
+  if(plMatch)o.leaves=plMatch[1]+' days annual leave';
+  else if(/leave\s+policy|annual\s+leave|privilege\s+leave|casual\s+leave/i.test(raw))o.leaves='Leave policy mentioned';
+
+  // Relocation
+  if(/relocation\s+(?:allowance|assistance|support)|transfer\s+allowance/i.test(raw)){
+    var relAmt=raw.match(/relocation.*?(?:rs\.?|inr|₹)?\s*([\d,]+)/i);
+    o.relocation=relAmt?'Rs. '+parseFloat(relAmt[1].replace(/,/g,'')).toLocaleString('en-IN')+' relocation allowance':'Relocation assistance mentioned';
+  }
+
+  // Laptop / Equipment
+  if(/laptop|macbook|computer\s+equipment/i.test(raw))o.laptop='Laptop / equipment provided';
+
+  // Food
+  if(/meal\s+(?:allowance|card)|food\s+(?:allowance|coupon|card)|sodexo|canteen/i.test(raw)){
+    var foodAmt=raw.match(/(?:meal|food).*?([\d,]+)/i);
+    o.food=foodAmt?'Rs. '+parseFloat(foodAmt[1].replace(/,/g,'')).toLocaleString('en-IN')+'/month food allowance':'Meal benefit mentioned';
+  }
+
+  return o;
+}
+
+// ════════════════════════════════════════════════════════════════════
+// SCORING ENGINE
+// ════════════════════════════════════════════════════════════════════
+function computeScore(r){
+  var sal=r.salary||{},work=r.work||{},ex=r.exit||{},oth=r.other||{};
+  var pts=0,max=0;
+  function chk(val,w){max+=w;if(val&&val!=='Mentioned — amount not specified'&&val!=='Mentioned — terms not specified'&&val!=='Mentioned — details not specified'&&val!=='Mentioned — duration not specified')pts+=w;}
+  // Salary (40pts)
+  chk(sal.annualFixed,15);chk(sal.monthlyFixed||sal.monthlyGross,10);chk(sal.basic,8);chk(sal.variable,7);
+  // Exit (25pts)
+  chk(ex.notice,12);chk(ex.probation,7);chk(ex.bond,6);
+  // Work (15pts)
+  chk(work.mode,5);chk(work.hours,5);chk(work.weekends,5);
+  // Other (20pts)
+  chk(oth.startDate,8);chk(oth.insurance,6);chk(oth.leaves,6);
+  var score=max>0?Math.round((pts/max)*100):0;
+  var reason='';
+  if(score>=80)reason='Most key employment terms are clearly stated.';
+  else if(score>=60)reason='Core terms present; a few details are worth confirming.';
+  else if(score>=40)reason='Several key terms absent or unclear — clarification advised.';
+  else reason='Many standard terms are not specified in this document.';
+  return{score:score,reason:reason};
+}
+
+// ════════════════════════════════════════════════════════════════════
+// MARKET CLARITY (benchmark-based)
+// ════════════════════════════════════════════════════════════════════
+var BM={
+  bangalore:{f:[3,5,7.5],j:[6,9,14],m:[12,18,28],s:[24,38,55],l:[40,58,85]},
+  hyderabad:{f:[2.8,4.5,7],j:[5.5,8.5,13],m:[11,16,26],s:[20,33,50],l:[35,50,72]},
+  mumbai:{f:[3,4.5,7],j:[5.5,8,13],m:[11,17,27],s:[22,35,52],l:[38,52,78]},
+  pune:{f:[2.5,4,6.5],j:[5,7.5,12],m:[9,14,23],s:[18,28,44],l:[30,44,65]},
+  delhi:{f:[2.8,4.5,7],j:[5,8,13],m:[10,15,25],s:[20,30,47],l:[34,47,70]},
+  noida:{f:[2.5,4,6.5],j:[5,7.5,12],m:[9,14,23],s:[18,28,44],l:[30,44,65]},
+  gurgaon:{f:[3,4.5,7],j:[5.5,8.5,13],m:[11,16,26],s:[22,34,52],l:[36,50,75]},
+  chennai:{f:[2.5,4,6.5],j:[5,7.5,12],m:[9,14,22],s:[18,27,42],l:[28,42,62]},
+  kolkata:{f:[2,3.5,5.5],j:[4,6.5,10],m:[7,11,18],s:[14,22,34],l:[22,34,52]}
+};
+var CM={bangalore:['bangalore','bengaluru'],hyderabad:['hyderabad'],mumbai:['mumbai'],pune:['pune'],delhi:['delhi'],noida:['noida'],gurgaon:['gurgaon','gurugram'],chennai:['chennai'],kolkata:['kolkata']};
+var TM={f:['fresher','trainee','intern','graduate','associate'],j:['junior','analyst','executive','1 year','2 year'],m:['engineer','developer','sde','software','consultant','specialist'],s:['senior','principal','staff','lead engineer'],l:['manager','head','architect','director','vp']};
+
+function computeMarket(r){
+  var loc=(r.location||'').toLowerCase();
+  var role=(r.role||'').toLowerCase();
+  var lpa=r.salary&&r.salary.annualFixedNum?r.salary.annualFixedNum/100000:null;
+  if(!lpa)return{verdict:'insufficient',cls:'un',tick:'?',text:'Salary not found in document — market comparison not possible.',badge:'Insufficient data',meta:'',pct:0};
+
+  var city=null;
+  var _CM=(typeof CM==='object'&&CM)?CM:{};
+  Object.keys(_CM).forEach(function(k){if(!city&&_CM[k].some(function(a){return loc.indexOf(a)!==-1;}))city=k;});
+  var tier='m';
+  Object.keys((typeof TM==='object'&&TM)?TM:{}).forEach(function(k){if(TM[k].some(function(kw){return role.indexOf(kw)!==-1;}))tier=k;});
+  var _BM=(typeof BM==='object'&&BM)?BM:{};
+  if(!city||!_BM[city]){
+    // No city match — still do a general check
+    var general={f:[2.5,4,7],j:[5,8,13],m:[9,14,25],s:[18,28,50],l:[30,48,80]};
+    var gb=general[tier],lpaV=lpa,p25=gb[0],p50=gb[1],p75=gb[2];
+    var pct=Math.min(100,Math.max(0,((lpaV-p25)/(p75-p25))*100));
+    if(lpaV>=p25&&lpaV<=p75)return{verdict:'common',cls:'cm',tick:'✓',text:'This salary is commonly seen for this type of role.',badge:'Commonly seen',meta:'Based on role type · Location not detected',pct:pct,p25:p25,p50:p50,p75:p75,lpa:lpaV,tier:tier,cityLabel:'India (general)'};
+    if(lpaV<p25)return{verdict:'lower',cls:'lw',tick:'↓',text:'This salary appears lower than what is commonly seen for similar roles.',badge:'Below typical',meta:'Based on role type · Location not detected',pct:pct,p25:p25,p50:p50,p75:p75,lpa:lpaV,tier:tier,cityLabel:'India (general)'};
+    return{verdict:'high',cls:'cm',tick:'↑',text:'This salary is above the typical range for similar roles.',badge:'Above typical',meta:'Based on role type · Location not detected',pct:pct,p25:p25,p50:p50,p75:p75,lpa:lpaV,tier:tier,cityLabel:'India (general)'};
+  }
+  var b=BM[city][tier],p25=b[0],p50=b[1],p75=b[2];
+  var pct=Math.min(100,Math.max(0,((lpa-p25)/(p75-p25))*100));
+  var cityLabel=city.charAt(0).toUpperCase()+city.slice(1);
+  var tierLabel={f:'fresher',j:'junior',m:'mid-level',s:'senior',l:'lead'}[tier];
+  var meta=cityLabel+' · '+tierLabel+' roles';
+  if(lpa>=p25&&lpa<=p75)return{verdict:'common',cls:'cm',tick:'✓',text:'This salary is commonly seen for this role and location.',badge:'Commonly seen',meta:meta,pct:pct,p25:p25,p50:p50,p75:p75,lpa:lpa,tier:tier,cityLabel:cityLabel};
+  if(lpa<p25)return{verdict:'lower',cls:'lw',tick:'↓',text:'This salary appears lower than what is commonly seen for this role and location.',badge:'Below typical range',meta:meta,pct:pct,p25:p25,p50:p50,p75:p75,lpa:lpa,tier:tier,cityLabel:cityLabel};
+  return{verdict:'high',cls:'cm',tick:'↑',text:'This salary is above the typical range for this role and location.',badge:'Above typical',meta:meta,pct:pct,p25:p25,p50:p50,p75:p75,lpa:lpa,tier:tier,cityLabel:cityLabel};
+}
+
+function buildConfidence(d){
+  var m=(d&&d.market)||{verdict:'insufficient',cls:'un'};
+  var cls=m.cls||'un';
+  var line='', sub='';
+  if(m.verdict==='common'){
+    line = "This offer sits comfortably within the normal range for this role in " + ( (d.location||'your location').split(',')[0] || 'your location') + ".";
+    sub  = "Based on broad market bands — not company claims.";
+  }else if(m.verdict==='lower'){
+    line = "This offer looks a bit lower than typical for similar roles here.";
+    sub  = "Worth clarifying fixed vs variable and the non‑cash parts before signing.";
+  }else if(m.verdict==='high'){
+    line = "This offer sits on the higher side of the typical range.";
+    sub  = "Double‑check the split: fixed, variable, and any conditions attached.";
+  }else{
+    line = "We couldn’t confidently place this offer in a market band yet.";
+    sub  = "Upload a PDF with the salary table, or paste the text for a cleaner read.";
+  }
+  var ico = (m.verdict==='common') ? 
+    '<svg class="tickPop" viewBox="0 0 24 24" fill="none" stroke="rgba(16,185,129,1)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>' :
+    (m.verdict==='lower') ?
+    '<svg viewBox="0 0 24 24" fill="none" stroke="rgba(245,158,11,1)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4"/><path d="M12 17h.01"/><path d="M10.3 3.3h3.4L21 10.6v3.4L13.7 21h-3.4L3 13.7v-3.4z"/></svg>' :
+    (m.verdict==='high') ?
+    '<svg viewBox="0 0 24 24" fill="none" stroke="rgba(16,185,129,1)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5"/><path d="M5 12l7-7 7 7"/></svg>' :
+    '<svg viewBox="0 0 24 24" fill="none" stroke="rgba(100,116,139,1)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8h.01"/><path d="M11 12h1v4h1"/><circle cx="12" cy="12" r="10"/></svg>';
+  return '<div class="conf '+cls+'">'+
+    
+    '<div><div class="conf-title">Where you stand</div>'+
+    '<div class="conf-line">'+esc(line)+'</div>'+
+    '<div class="conf-sub">'+esc(sub)+'</div></div></div>';
+}
+
+
+function buildHeroOrb(d){
+  var m=(d&&d.market)||{verdict:'insufficient'};
+  var v=m.verdict||'insufficient';
+  var cls = (v==='common'||v==='high') ? 'good' : (v==='lower') ? 'warn' : 'info';
+  var svg = '';
+  if(v==='common'){
+    svg = '<svg class="orb-ico orb-check" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>';
+  }else if(v==='lower'){
+    svg = '<svg class="orb-ico" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4"/><path d="M12 17h.01"/><path d="M10.3 3.3h3.4L21 10.6v3.4L13.7 21h-3.4L3 13.7v-3.4z"/></svg>';
+  }else if(v==='high'){
+    svg = '<svg class="orb-ico" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5"/><path d="M5 12l7-7 7 7"/></svg>';
+  }else{
+    svg = '<svg class="orb-ico" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8h.01"/><path d="M11 12h1v4h1"/><circle cx="12" cy="12" r="10"/></svg>';
+  }
+  var confetti = '<span class="confetti">'+
+    '<i style="--dx:-28px;--dy:-26px"></i>'+
+    '<i style="--dx:30px;--dy:-22px"></i>'+
+    '<i style="--dx:-34px;--dy:18px"></i>'+
+    '<i style="--dx:26px;--dy:26px"></i>'+
+    '<i style="--dx:0px;--dy:-38px"></i>'+
+  '</span>';
+  return '<div class="hero-orb '+cls+'">'+svg+confetti+'</div>';
+}
+
+// ════════════════════════════════════════════════════════════════════
+// CHECKLIST
+// ════════════════════════════════════════════════════════════════════
+function buildChecklist(r){
+  var found=[],unclear=[],missing=[];
+  var sal=r.salary||{},work=r.work||{},ex=r.exit||{},oth=r.other||{};
+  function check(label,val,isUnclear){
+    if(!val)missing.push(label);
+    else if(isUnclear||val.toString().indexOf('not specified')!==-1||val.toString().indexOf('Mentioned')===0)unclear.push(label);
+    else found.push(label);
+  }
+  check('Annual CTC / Salary',sal.annualFixed);
+  check('Monthly fixed pay',sal.monthlyFixed||sal.monthlyGross);
+  check('Basic salary',sal.basic);
+  check('Variable / Performance pay',sal.variable,sal.variableUnclear);
+  check('PF contribution',sal.pf);
+  check('Notice period',ex.notice,ex.notice&&ex.notice.indexOf('not specified')!==-1);
+  check('Probation period',ex.probation,ex.probation&&ex.probation.indexOf('not specified')!==-1);
+  check('Bond / Service agreement',ex.bond,ex.bond&&ex.bond.indexOf('not specified')!==-1);
+  check('Work mode (remote/office/hybrid)',work.mode);
+  check('Working hours',work.hours);
+  check('Start / Joining date',oth.startDate);
+  check('Medical / Health insurance',oth.insurance);
+  check('Leave policy',oth.leaves);
+  return{found:found,unclear:unclear,missing:missing};
+}
+
+// ════════════════════════════════════════════════════════════════════
+// TAX CALCULATION ENGINE (FY 2025-26)
+// ════════════════════════════════════════════════════════════════════
+function computeTax(sal,regime,ded80c){
+  if(!sal||!sal.annualFixedNum)return null;
+  var annual=sal.annualFixedNum;
+  var basic=sal.basicNum||Math.round(annual*0.35/12);
+  var pfEmployee=Math.round(Math.min(basic,15000)*0.12); // PF cap at 15k basic
+  var annualPF=pfEmployee*12;
+
+  // Tax slabs FY 2025-26
+  var tax=0;
+  if(regime==='new'){
+    var taxable=Math.max(0,annual-75000); // std deduction 75k
+    var slabs=[[0,300000,0],[300000,700000,0.05],[700000,1000000,0.10],[1000000,1200000,0.15],[1200000,1500000,0.20],[1500000,Infinity,0.30]];
+    slabs.forEach(function(s){if(taxable>s[0])tax+=(Math.min(taxable,s[1])-s[0])*s[2];});
+    if(taxable<=700000)tax=Math.max(0,tax-25000); // 87A rebate
+  } else {
+    var taxable=Math.max(0,annual-50000-Math.min(ded80c,150000));
+    var slabs=[[0,250000,0],[250000,500000,0.05],[500000,1000000,0.20],[1000000,Infinity,0.30]];
+    slabs.forEach(function(s){if(taxable>s[0])tax+=(Math.min(taxable,s[1])-s[0])*s[2];});
+    if(taxable<=500000)tax=Math.max(0,tax-12500);
+  }
+  tax=Math.round(tax*1.04); // + 4% cess
+  var monthlyGross=Math.round(annual/12);
+  var monthlyTDS=Math.round(tax/12);
+  var monthlyPF=pfEmployee;
+  var monthlyPT=monthlyGross<10000?0:monthlyGross<15000?150:200;
+  var takeHome=monthlyGross-monthlyTDS-monthlyPF-monthlyPT;
+  return{annual:annual,monthlyGross:monthlyGross,tds:monthlyTDS,pf:monthlyPF,pt:monthlyPT,takeHome:takeHome,annualTax:tax};
+}
+
+function fmtINR(n){
+  if(!n||isNaN(n))return null;
+  if(n>=10000000)return '₹'+(n/10000000).toFixed(2)+' Cr';
+  if(n>=100000)return '₹'+(n/100000).toFixed(2)+' L';
+  return '₹'+Math.round(n).toLocaleString('en-IN');
+}
+
+// ════════════════════════════════════════════════════════════════════
+// EMAIL TEMPLATES (dynamically populated from extracted data)
+// ════════════════════════════════════════════════════════════════════
+function buildEmails(d){
+  var co=d.company||'[Company Name]';
+  var role=d.role||'[Role]';
+  var sal=d.salary||{};
+  var ex=d.exit||{};
+  var oth=d.other||{};
+  var ctc=sal.annualFixed?sal.annualFixed:'[CTC]';
+  var notice=ex.notice||'[notice period]';
+  var joining=oth.startDate||'[joining date]';
+  var bond=ex.bond;
+
+  var emails=[
+    // 1. Accept offer
+    {
+      label:'Accept Offer',
+      icon:'✅',
+      to:'HR / Talent Acquisition Team',
+      subject:'Acceptance of Offer — '+role+' at '+co,
+      body:'Dear Hiring Team,\n\nThank you for extending the offer of employment for the position of '+role+' at '+co+'. I am pleased to formally accept this offer.\n\nI understand that my annual CTC will be '+ctc+(joining&&joining!=='[joining date]'?', and I confirm my joining date as '+joining:'')+'.\n\nI look forward to joining the team and contributing positively. Please let me know if there are any documents or formalities I need to complete before my start date.\n\nThank you once again for this opportunity.\n\nWarm regards,\n[Your Full Name]\n[Your Mobile Number]'
+    },
+    // 2. Request salary clarification
+    {
+      label:'Clarify Salary Breakup',
+      icon:'🧾',
+      to:'HR / Compensation Team',
+      subject:'Request for Detailed Salary Structure — '+role+' Offer',
+      body:'Dear HR Team,\n\nThank you for the offer letter for the position of '+role+' at '+co+'.\n\nI would like to request a detailed breakup of the offered CTC of '+ctc+'. Specifically, I would appreciate clarity on:\n\n1. Monthly fixed (in-hand) component\n2. Basic salary amount\n3. HRA and other allowances\n4. Variable / performance pay — eligibility criteria and payout frequency\n5. Employer\'s PF contribution (included in CTC or over and above)\n6. Any reimbursements or one-time components\n\nA clear salary structure will help me plan accordingly. I hope this is not an inconvenience.\n\nThank you for your time and consideration.\n\nBest regards,\n[Your Full Name]'
+    },
+    // 3. Negotiate salary
+    {
+      label:'Negotiate Salary',
+      icon:'💬',
+      to:'HR / Hiring Manager',
+      subject:'Offer Discussion — '+role+' at '+co,
+      body:'Dear [HR Name / Hiring Manager],\n\nThank you for extending the offer for the role of '+role+' at '+co+'. I am genuinely excited about this opportunity and the team.\n\nHaving reviewed the offer carefully, the current CTC of '+ctc+' is slightly below my expectations based on my experience and current compensation. I would like to respectfully discuss whether there is any flexibility in the compensation structure.\n\nI am confident in the value I can bring to the role and would appreciate the opportunity to align on compensation before formally accepting. I am open to a brief conversation at your convenience.\n\nI remain very interested in this opportunity and hope we can reach a mutually agreeable arrangement.\n\nThank you for your understanding.\n\nBest regards,\n[Your Full Name]\n[Your Contact Number]'
+    },
+    // 4. Clarify bond / service agreement
+    {
+      label:bond?'Clarify Bond Terms':'Ask About Bond',
+      icon:'🔗',
+      to:'HR Team',
+      subject:'Query Regarding '+(bond?'Bond / Service Agreement':'Service Terms')+' — '+role+' Offer',
+      body:'Dear HR Team,\n\nThank you for the offer letter for the role of '+role+' at '+co+'.\n\nI noticed that the offer includes'+(bond?' a service bond / agreement of '+bond:' a reference to a bond or service agreement')+'.\n\nI would appreciate written clarification on the following:\n\n1. Exact duration and conditions of the bond\n2. Amount to be recovered in case of early exit\n3. Whether the bond applies during the probation period as well\n4. Whether there are any circumstances under which the bond may be waived\n\nI want to ensure I fully understand my obligations before signing. Please feel free to share the relevant clause from the employment agreement.\n\nThank you for your assistance.\n\nBest regards,\n[Your Full Name]'
+    },
+    // 5. Joining date extension
+    {
+      label:'Request Joining Extension',
+      icon:'📅',
+      to:'HR Team',
+      subject:'Request for Joining Date Extension — '+role+' at '+co,
+      body:'Dear HR Team,\n\nThank you for the offer of employment for the position of '+role+' at '+co+(joining&&joining!=='[joining date]'?'. I note that the current joining date is '+joining:'')+'. I am very much looking forward to joining the team.\n\nI would like to make a sincere request to extend my joining date by approximately [X weeks/days] due to [brief reason: prior commitment / notice period at current employer / personal reason]. I assure you that this will not impact my enthusiasm or commitment to the role.\n\nI understand this may require approval and I am happy to provide any additional information if needed. I am flexible on the revised date and can align with what works best for the team.\n\nThank you for considering my request.\n\nBest regards,\n[Your Full Name]\n[Your Contact Number]'
+    },
+    // 6. Clarify notice period
+    {
+      label:'Clarify Notice Period',
+      icon:'📋',
+      to:'HR Team',
+      subject:'Clarification on Notice Period — '+role+' Offer at '+co,
+      body:'Dear HR Team,\n\nThank you for the offer letter for the position of '+role+' at '+co+'.\n\nI would like to seek written clarification on the notice period terms'+(notice&&notice!=='[notice period]'?'. The offer mentions a notice period of '+notice+' — I would appreciate confirmation of the following:':':')+'\n\n1. Does the notice period apply mutually (both employer and employee)?\n2. Is the notice period applicable during probation as well, or does a different period apply?\n3. Can the notice period be served in cash (payment in lieu of notice)?\n4. Is there a clause for early release with mutual agreement?\n\nHaving this clarity will help me plan my transition appropriately.\n\nThank you for your time.\n\nBest regards,\n[Your Full Name]'
+    },
+    // 7. Decline offer politely
+    {
+      label:'Decline Offer',
+      icon:'🙏',
+      to:'HR Team',
+      subject:'Regarding Offer — '+role+' at '+co,
+      body:'Dear [HR Name],\n\nThank you sincerely for offering me the position of '+role+' at '+co+'. I genuinely appreciate the time invested by the team in the interview process.\n\nAfter careful consideration, I have decided to respectfully decline this offer at this time. This was not an easy decision, as I have great respect for '+co+' and the team I met. My decision is based on [personal reasons / a competing offer that better aligns with my current goals].\n\nI hope this does not cause any inconvenience and I apologise for any impact on your timelines. I would be grateful to remain in touch and explore future opportunities with '+co+'.\n\nThank you once again for this opportunity.\n\nWarm regards,\n[Your Full Name]'
+    },
+    // 8. Ask about work mode / remote policy
+    {
+      label:'Clarify Work Mode',
+      icon:'🏠',
+      to:'HR Team',
+      subject:'Query on Work Arrangement — '+role+' at '+co,
+      body:'Dear HR Team,\n\nThank you for the offer for the role of '+role+' at '+co+'.\n\nI have a query regarding the work arrangement for this position. The offer letter does not clearly specify the expected work mode. I would appreciate written confirmation on:\n\n1. Whether the role is fully remote, hybrid, or office-based\n2. If hybrid, how many days per week are expected in office\n3. Whether the policy is subject to change with notice\n4. The office location / reporting location\n\nThis information will help me plan my logistics accordingly. I look forward to your response.\n\nThank you.\n\nBest regards,\n[Your Full Name]'
+    }
+  ];
+
+  // Filter/reorder emails based on what we found — most relevant first
+  var priority=[];
+  priority.push(emails[0]); // Accept is always first
+  priority.push(emails[2]); // Negotiate is always included
+  if(!sal.monthlyFixed&&!sal.basic)priority.push(emails[1]); // Clarify salary if breakup missing
+  if(bond||/bond|service\s+agreement/i.test(document.getElementById('wow-inner').textContent||''))priority.push(emails[3]);
+  priority.push(emails[5]); // Notice period clarification
+  priority.push(emails[4]); // Joining extension
+  if(!d.work||!d.work.mode)priority.push(emails[7]); // Work mode if not found
+  priority.push(emails[6]); // Decline always last
+
+  // Remove duplicates, keep unique
+  var seen={};
+  return priority.filter(function(e){if(seen[e.label])return false;seen[e.label]=true;return true;});
+}
+
+// ════════════════════════════════════════════════════════════════════
+// ANALYSIS FLOW
+// ════════════════════════════════════════════════════════════════════
+var MSGS=['Extracting text from PDF…','Parsing salary structure…','Checking employment terms…','Calculating take-home pay…','Building your report…'];
+function doAnalyze(){
+  showScreen('s-load');
+  var mi=0,el=document.getElementById('lmsg');
+  var loop=setInterval(function(){el.textContent=MSGS[++mi%MSGS.length];},900);
+  var rawText=APP.tab==='pa'?APP.pasteText:(APP.fi?APP.fi.text:'');
+  // Small delay so loading screen shows
+  setTimeout(function(){
+    try{
+      var result=analyze(rawText);
+      APP.data=result;
+      clearInterval(loop);
+      renderWow();
+      showScreen('s-wow');
+    }catch(err){
+      clearInterval(loop);
+      setErr('Analysis error: '+err.message);
+      showScreen('s-home');
+    }
+  },1200);
+}
+
+// ════════════════════════════════════════════════════════════════════
+// WOW RENDER
+// ════════════════════════════════════════════════════════════════════
+
+function renderMCIcon(cls, verdict){
+  // cls: cm (good/common/high), lw (lower), un (unknown)
+  if(cls==='cm'){
+    return ''+
+      '<span class="mc-icon" aria-hidden="true">'+
+        '<svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">'+
+          '<path d="M18.5 24.5L22.5 28.5L30.5 19.5" class="mc-check" stroke="white" stroke-width="4.2" stroke-linecap="round" stroke-linejoin="round"/>'+
+        '</svg>'+
+      '</span>';
+  }
+  if(cls==='lw'){
+    return ''+
+      '<span class="mc-icon" aria-hidden="true">'+
+        '<svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">'+
+          '<path d="M24 6L44 41H4L24 6Z" fill="rgba(255,255,255,.18)"/>'+
+          '<path d="M24 17V27" stroke="white" stroke-width="4" stroke-linecap="round"/>'+
+          '<path d="M24 34.5V35" stroke="white" stroke-width="5" stroke-linecap="round"/>'+
+        '</svg>'+
+      '</span>';
+  }
+  // unknown/info
+  return ''+
+    '<span class="mc-icon" aria-hidden="true">'+
+      '<svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">'+
+        '<circle cx="24" cy="24" r="18" fill="rgba(255,255,255,.14)"/>'+
+        '<path d="M24 21V34" stroke="white" stroke-width="4" stroke-linecap="round"/>'+
+        '<path d="M24 14V14.5" stroke="white" stroke-width="6" stroke-linecap="round"/>'+
+      '</svg>'+
+    '</span>';
+}
+
+
+function renderWow(){
+  var d=APP.data;if(!d)return;
+  var sal=d.salary||{},ex=d.exit||{},work=d.work||{},oth=d.other||{};
+  var mkt=d.market||{};
+  var sc=d.score||{};
+  var score=sc.score||0;
+  var scoreClr=score>=75?'#16a34a':score>=50?'#d97706':'#dc2626';
+  var R=44,cx=56,cy=56,circ=2*Math.PI*R,dash=circ-(score/100)*circ;
+
+  // Recompute tax with current regime/ded
+  var th=computeTax(sal,APP.regime,APP.ded);
+
+  // Identity bar
+  var idH='<div class="id-bar">'+(d.company?'<div class="id-co">'+esc(d.company)+'</div>':'')+
+    '<div class="id-chips">'+
+    (d.location?'<div class="id-chip">📍 '+esc(d.location)+'</div>':'')+
+    (d.role?'<div class="id-chip">👤 '+esc(d.role)+'</div>':'')+
+        '</div></div>';
+
+  // Benchmark HTML
+  var benchH='';
+  if(mkt.p25&&mkt.lpa){
+    benchH='<div class="bench" id="bcard">'+
+      '<div class="bench-lbl">How this compares in '+esc(mkt.cityLabel||'your region')+(mkt.tier?' · '+{f:'fresher',j:'junior',m:'mid-level',s:'senior',l:'lead'}[mkt.tier]+' roles':'')+'</div>'+
+      '<div class="bench-track"><div class="bench-dot" id="bdot" style="left:0%"></div></div>'+
+      '<div class="bench-vals"><span>₹'+mkt.p25+'L (P25)</span><span>₹'+mkt.p50+'L median</span><span>₹'+mkt.p75+'L (P75)</span></div>'+
+      '<div class="bench-res" style="color:'+ (mkt.verdict==='lower'?'var(--amber)':mkt.verdict==='high'?'var(--green)':'var(--ink)') +'">'+esc(mkt.badge)+'</div>'+
+      '<div class="bench-note">Indicative heuristic bands — not real-time salary data and not a guarantee. Varies heavily by experience, location, skills, and company. Use as a quick sense-check only.</div>'+
+      '</div>';
+  }
+
+  // Quick flags card
+  var flags=buildFlags(d);
+
+  // Bottom row cards (ordered per spec)
+  var botCards='';
+  var cards=[];
+  if(sal.variable)cards.push({cls:'gn',lbl:'Variable Pay',val:sal.variable,note:sal.variablePct?sal.variablePct+' of fixed':''});
+  if(oth.insurance)cards.push({cls:'bl',lbl:'Health Insurance',val:oth.insurance,note:''});
+  if(cards.length){
+    botCards='<div class="row2">';
+    cards.forEach(function(c){
+      botCards+='<div class="rc '+c.cls+(cards.length===1?' full':'')+'"><div class="rc-lbl">'+esc(c.lbl)+'</div><div class="rc-val">'+esc(c.val)+'</div>'+(c.note?'<div class="rc-note">'+esc(c.note)+'</div>':'')+'</div>';
+    });
+    botCards+='</div>';
+  }
+
+  var html=
+    '<button class="bk" onclick="goHome()">← Analyze another</button>'+
+    idH+
+    '<div class="wow-lbl">Your offer — clearly explained</div>'+'<div class="hero">'+  '<div class="hero-top">'+    '<div>'+      '<div class="hero-ctc-lbl">Annual CTC</div>'+      '<div class="hero-ctc-val">'+esc(sal.annualFixed||sal.ctc||'—')+'</div>'+      '<div class="hero-ctc-sub">As stated in your offer</div>'+    '</div>'+buildHeroOrb(d)+  '</div>'+  '<div class="hero-confWrap">'+buildConfidence(d)+'</div>'+'</div>'+'<div class="wow-stack">'+
+
+    benchH+
+
+    // Monthly fixed + score ring
+    '<div class="mfc"><div>'+
+    '<div class="mfc-lbl">Approx. net monthly income (after tax)</div>'+
+    (sal.monthlyFixed||sal.monthlyGross
+      ?'<div class="mfc-num">'+(th&&th.takeHome?fmtINR(th.takeHome):esc(sal.monthlyFixed||fmtINR(sal.monthlyGross)||''))+'</div>'+
+        '<div class="tax-pill">🧾 New regime (default) · after-tax estimate</div>'+
+        '<div class="mfc-note">'+(sal.monthlyFixed?'Computed from your salary components and current tax slabs.':'Computed from annual CTC and estimated deductions.')+'</div>'
+      :'<div class="mfc-num nil">Monthly amount not stated — see annual CTC above</div>')+
+    '</div>'+
+    '<div class="score-col">'+
+    '<svg width="112" height="112" viewBox="0 0 112 112">'+
+    '<circle cx="'+cx+'" cy="'+cy+'" r="'+R+'" fill="none" stroke="#e5e3de" stroke-width="8" stroke-linecap="round"/>'+
+    '<circle cx="'+cx+'" cy="'+cy+'" r="'+R+'" fill="none" stroke="'+scoreClr+'" stroke-width="8" stroke-linecap="round" stroke-dasharray="'+circ+'" stroke-dashoffset="'+circ+'" id="sarc" transform="rotate(-90 '+cx+' '+cy+')" style="transition:stroke-dashoffset 1.2s cubic-bezier(.4,0,.2,1)"/>'+
+    '<text x="'+cx+'" y="'+(cy-2)+'" text-anchor="middle" font-family="DM Mono,monospace" font-size="22" font-weight="500" fill="#0e0e0e" id="stxt">—</text>'+
+    '<text x="'+cx+'" y="'+(cy+14)+'" text-anchor="middle" font-family="Manrope,sans-serif" font-size="9" fill="#8a8680" letter-spacing="1">%</text>'+
+    '</svg>'+
+    '<div class="s-lbl">Documentation completeness</div>'+
+    '<div class="s-sub">'+esc(sc.reason||'')+'</div>'+
+    '</div></div>'+
+
+    // Calculator
+    '<div id="cwrap">'+calcHTML(th)+'</div>'+
+
+    // Key items (Variable pay, Insurance, etc.)
+    botCards+
+
+    // What we found
+    flags+
+
+    '</div>'+ // /wow-stack
+
+    // Next steps
+    nsHTML(d)+
+
+    // CTA to details + emails
+    '<div class="cta"><div><div class="cta-h">Full breakdown + Email drafts</div><div class="cta-s">Salary structure, exit terms, completeness checklist, and ready-to-send email templates.</div><div style="margin-top:10px;font-size:12px;color:var(--muted)">Most people don’t negotiate because they’re unsure what’s normal. <span style="font-weight:700;color:var(--ink)">Now you know.</span></div></div>'+
+    '<button class="cta-btn" onclick="renderDet();showScreen(\'s-det\')">See all →</button></div>'+
+
+    '<div class="disc-txt"><strong>Important:</strong> OfferLens uses pattern matching on your document. Figures may vary from actual offer if formatting is unusual. This is for informational purposes only — not legal, tax, or financial advice. No data is stored or transmitted.</div>';
+
+  document.getElementById('wow-inner').innerHTML=html;
+
+  requestAnimationFrame(function(){requestAnimationFrame(function(){
+    var arc=document.getElementById('sarc'),txt=document.getElementById('stxt');
+    if(arc)arc.style.strokeDashoffset=String(dash);
+    if(txt){var c=0;var t=setInterval(function(){txt.textContent=Math.round((c/100)*score);if(++c>100)clearInterval(t);},8);}
+    var bd=document.getElementById('bdot');
+    if(bd&&mkt.pct!==undefined)setTimeout(function(){bd.style.left=mkt.pct+'%';},200);
+  });});
+}
+
+function buildFlags(d){
+  var chk=d.checklist||{};
+  var found=(chk.found||[]).slice(0);
+  var unclear=(chk.unclear||[]).slice(0);
+  var missing=(chk.missing||[]).slice(0);
+
+  if(!found.length && !unclear.length && !missing.length) return '';
+
+  var left = '';
+  if(found.length){
+    left = '<div style="margin-top:10px"><div style="font-family:DM Mono,monospace;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--green);margin-bottom:10px">Clearly stated</div>' +
+      found.map(function(x){return '<div class="flag-item"><div class="flag-dot ok"></div><span>'+esc(x)+'</span></div>';}).join('') +
+      '</div>';
+  } else {
+    left = '<div style="margin-top:10px"><div style="font-family:DM Mono,monospace;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:10px">Clearly stated</div>' +
+      '<div style="font-size:12px;color:var(--muted);font-style:italic">Nothing explicit found in this document.</div></div>';
+  }
+
+  var rightItems = [];
+  unclear.forEach(function(u){ rightItems.push({dot:'warn', text: u+' — mentioned, but details are not specified'}); });
+  missing.forEach(function(m){ rightItems.push({dot:'miss', text: m+' — not found in this document'}); });
+
+  var right = '';
+  if(rightItems.length){
+    right = '<div style="margin-top:16px"><div style="font-family:DM Mono,monospace;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--amber);margin-bottom:10px">Not found / unclear</div>' +
+      rightItems.map(function(f){return '<div class="flag-item"><div class="flag-dot '+f.dot+'"></div><span>'+esc(f.text)+'</span></div>';}).join('') +
+      '</div>';
+  }
+
+  return '<div class="flags-card">'+
+    '<div class="flags-title">📋 What we found</div>'+
+    left + right +
+    '</div>';
+}
+
+
+// ════════════════════════════════════════════════════════════════════
+function calcHTML(th){
+  var hd='<div class="calc-hd" id="chd" onclick="toggleCalc()">'+
+    '<div><div class="calc-title">🧮 Take-Home Calculator <span class="calc-badge">FY 2025–26</span></div>'+
+    '<div class="calc-sub">Monthly in-hand after TDS · PF · Professional Tax</div></div>'+
+    '<span class="chev" id="cchev">▾</span></div>';
+  if(!th){
+    return hd+'<div class="calc-body H" id="cbody"><div style="font-size:13px;color:var(--muted);font-style:italic">Salary amount not detected. Please check the salary section above.</div></div>';
+  }
+  var body='<div class="calc-body H" id="cbody">'+
+    '<div class="c-grid">'+
+    '<div><div class="c-lbl">Gross Annual CTC</div>'+
+    '<input class="c-inp" id="c-ctc" type="number" value="'+Math.round((APP.data&&APP.data.salary&&APP.data.salary.annualFixedNum)||0)+'" oninput="recalcFull()" placeholder="Annual CTC in ₹"></div>'+
+    '<div><div class="c-lbl">Tax Regime</div>'+
+    '<select class="c-sel" id="csel" onchange="recalcFull()">'+
+    '<option value="new"'+(APP.regime==='new'?' selected':'')+'>New Regime (default)</option>'+
+    '<option value="old"'+(APP.regime==='old'?' selected':'')+'>Old Regime</option>'+
+    '</select></div>'+
+    '<div id="dwrap" style="'+(APP.regime==='old'?'':'display:none')+'"><div class="c-lbl">80C Deductions (₹)</div>'+
+    '<input class="c-inp" id="c80c" type="number" value="'+APP.ded+'" min="0" max="150000" oninput="recalcFull()"></div>'+
+    '</div>'+
+    '<div class="c-result" id="cres">'+crHTML(th)+'</div>'+
+    '<div class="c-disc">FY 2025–26 slabs assumed. Std deduction ₹75k (new regime) / ₹50k (old regime). PF shown as 12% of basic (EPF rules may cap contributions). PT estimated at ₹200/month. In-hand can differ due to employer payroll structure, exemptions, deductions, bonuses, arrears, and state PT rules. <strong>Indicative estimate only — not tax/financial advice. Verify with your payslip/HR.</strong></div>'+
+    '</div>';
+  return hd+body;
+}
+function crHTML(th){
+  if(!th)return'<div style="font-size:13px;color:var(--muted);font-style:italic">Enter CTC above to calculate.</div>';
+  return'<div class="cr-lbl">Monthly breakdown — estimated</div>'+
+    '<div class="cr"><span class="k">Gross monthly CTC</span><span class="v">'+fmtINR(th.monthlyGross)+'</span></div>'+
+    '<div class="cr dd"><span class="k">− TDS (income tax ÷ 12)</span><span class="v">− '+fmtINR(th.tds)+'</span></div>'+
+    '<div class="cr dd"><span class="k">− PF employee contribution</span><span class="v">− '+fmtINR(th.pf)+'</span></div>'+
+    '<div class="cr dd"><span class="k">− Professional Tax (est.)</span><span class="v">− ₹'+th.pt+'</span></div>'+
+    '<hr style="border:none;border-top:2px solid var(--ink);margin:2px 0">'+
+    '<div class="cr-total"><span class="k">Est. take-home / month</span><span class="v">'+fmtINR(th.takeHome)+'</span></div>';
+}
+function toggleCalc(){
+  APP.calcOpen=!APP.calcOpen;
+  var b=document.getElementById('cbody'),h=document.getElementById('chd'),c=document.getElementById('cchev');
+  if(b)b.classList.toggle('H',!APP.calcOpen);
+  if(h)h.classList.toggle('op',APP.calcOpen);
+  if(c)c.classList.toggle('op',APP.calcOpen);
+}
+function recalcFull(){
+  var ctcEl=document.getElementById('c-ctc'),selEl=document.getElementById('csel'),dedEl=document.getElementById('c80c');
+  if(selEl)APP.regime=selEl.value;
+  if(dedEl)APP.ded=parseInt(dedEl.value)||0;
+  var dw=document.getElementById('dwrap');if(dw)dw.style.display=APP.regime==='old'?'':'none';
+  var ctcVal=ctcEl?parseInt(ctcEl.value)||0:0;
+  var fakeSal={annualFixedNum:ctcVal,basicNum:Math.round(ctcVal*0.35/12)};
+  var th=ctcVal>0?computeTax(fakeSal,APP.regime,APP.ded):null;
+  var cr=document.getElementById('cres');if(cr)cr.innerHTML=crHTML(th);
+}
+
+// ════════════════════════════════════════════════════════════════════
+// NEXT STEPS
+// ════════════════════════════════════════════════════════════════════
+function nsHTML(d){
+  var sc=d.score||{};
+  var score=sc.score||0;
+  var chk=d.checklist||{};
+  var unc=(chk.unclear||[]).length;
+  var mis=(chk.missing||[]).length;
+  var ex=d.exit||{};
+  var items=[];
+  if(score>=75)items.push({i:'✓',t:'This offer appears well documented. Most standard terms are clearly stated.'});
+  else if(score>=50)items.push({i:'◎',t:'This offer covers the basics. A few terms may benefit from written confirmation before you sign.'});
+  else items.push({i:'◎',t:'Several standard terms are absent or unclear. Consider requesting a more detailed offer letter.'});
+  if(unc>0)items.push({i:'→',t:unc+' term'+(unc>1?'s are':' is')+' mentioned but not clearly defined — use the email templates below to request written clarification.'});
+  if(mis>0)items.push({i:'→',t:mis+' commonly expected term'+(mis>1?'s are':' is')+' not present — it is reasonable to ask HR if these are covered in your employment agreement.'});
+  if(ex.bond)items.push({i:'⚠',t:'A bond / service agreement was detected. Review the duration and recovery amount before signing. Use the Clarify Bond email template below.'});
+  items.push({i:'ℹ',t:'Requesting written clarification on any term before signing is standard practice and does not imply distrust.'});
+  return'<div class="ns-box"><div class="ns-title">What this means for you</div>'+
+    items.map(function(x){return'<div class="ns-item"><span class="ns-ico">'+x.i+'</span><span>'+esc(x.t)+'</span></div>';}).join('')+'</div>';
+}
+
+// ════════════════════════════════════════════════════════════════════
+// DETAILS + EMAIL RENDER
+// ════════════════════════════════════════════════════════════════════
+// ── Contextual nil messages — same truth, far better psychology ──
+var NIL_MSG={
+  'Annual CTC':                  'Not stated — ask for a written salary breakdown',
+  'Monthly gross (calc.)':       'Calculated from CTC once found',
+  'Monthly fixed (stated)':      'Not stated — clarify with HR before joining',
+  'Basic salary':                'Not broken out — typically 35–50% of CTC',
+  'HRA':                         'Not specified — typically part of your CTC structure',
+  'Special allowance':           'Not separately listed',
+  'Variable / Performance pay':  'Not mentioned — ask if any pay is variable',
+  'Variable pay %':              'Not mentioned',
+  'PF employee contribution':    'Typically 12% of basic — confirm before joining',
+  'Gratuity':                    'Typically covered by law after 5 years of service',
+  'Stock options (ESOP/RSU)':    'Not mentioned — commonly discussed post-offer',
+  'Work mode':                   'Not stated — clarify before joining',
+  'Working hours':               'Not stated — typically in final HR policy',
+  'Shift timings':               'Not stated — clarify if relevant to you',
+  'Weekend policy':              'Not stated — typically in final HR policy',
+  'Night shift':                 'Not mentioned — likely not applicable',
+  'Transport / Cab':             'Not mentioned — commonly discussed post-offer',
+  'Probation period':            'Not stated — typically in final HR policy',
+  'Notice period':               'Not stated — clarify before joining',
+  'Bond / Lock-in duration':     'Not mentioned — likely not applicable if absent',
+  'Bond recovery amount':        'Not mentioned',
+  'Termination':                 'Not stated — governed by standard labour law',
+  'Joining date':                'Not stated — clarify before joining',
+  'Medical insurance':           'Not mentioned — commonly discussed post-offer',
+  'Leave policy':                'Not mentioned — typically in final HR policy',
+  'Food / Meal benefit':         'Not mentioned — commonly discussed post-offer',
+  'Laptop / Equipment':          'Not mentioned — commonly discussed post-offer',
+  'Relocation support':          'Not mentioned — not applicable if absent'
+};
+
+function dr(label,val,delay){
+  if(val===undefined||val===null||val===''){
+    var msg=NIL_MSG[label]||'Not mentioned — clarify before joining';
+    return'<div class="drow" style="animation-delay:'+delay+'s"><div class="d-k">'+label+'</div><div class="d-v nil">'+msg+'</div></div>';
+  }
+  var cls='';
+  if(typeof val==='string'&&(val.indexOf('Mentioned')===0||val.indexOf('not specified')!==-1))cls='unc';
+  return'<div class="drow" style="animation-delay:'+delay+'s"><div class="d-k">'+label+'</div><div class="d-v '+cls+'">'+esc(String(val))+'</div></div>';
+}
+
+// Take-home row with meaning sub-line
+function drTakeHome(val,delay){
+  if(!val)return dr('Estimated take-home/month',null,delay);
+  return'<div class="drow" style="animation-delay:'+delay+'s">'+
+    '<div class="d-k">Estimated take-home / month</div>'+
+    '<div class="d-v"><div>'+esc(val)+'</div>'+
+    '<div class="th-meaning">This is your likely in-hand range, not a guarantee.<br>Assumes standard PF &amp; tax deductions.</div>'+
+    '</div></div>';
+}
+
+// ── 1. Hero Clarity Box ──
+function buildHeroClarity(d){
+  var sal=d.salary||{},wk=d.work||{},ex=d.exit||{};
+  var payOk=!!(sal.annualFixed||sal.monthlyFixed||sal.monthlyGross);
+  var workOk=!!(wk.mode||wk.hours);
+  var exitOk=!!(ex.notice||ex.probation);
+
+  var headline;
+  if(payOk && workOk && exitOk)
+    headline='This offer is well-defined on pay, work conditions, and exit terms.';
+  else if(payOk && !workOk && !exitOk)
+    headline='Pay is clearly defined. Work conditions and exit terms need clarification before you commit.';
+  else if(payOk && workOk && !exitOk)
+    headline='Pay and work setup look clear. Review exit terms before signing.';
+  else if(payOk && !workOk && exitOk)
+    headline='Pay and exit terms are clear. Work mode and hours are still undefined.';
+  else if(!payOk)
+    headline='Request a full salary breakdown in writing — the financial picture is incomplete.';
+  else
+    headline='A few standard terms need clarification before this offer is decision-ready.';
+
+  var bullets=[
+    {dot:payOk?'ok':'miss',  text:payOk ?'Pay structure is defined'               :'Pay structure needs clarification'},
+    {dot:workOk?'ok':'warn', text:workOk?'Work mode & hours are specified'         :'Work mode & hours not specified'},
+    {dot:exitOk?'ok':'warn', text:exitOk?'Exit terms (notice / probation) are stated':'Exit terms not stated in this document'}
+  ];
+
+  return'<div class="hero-clarity">'+
+    '<div class="hc-headline">'+esc(headline)+'</div>'+
+    '<div class="hc-bullets">'+
+    bullets.map(function(b){return'<div class="hc-row"><div class="hc-dot '+b.dot+'"></div><span>'+esc(b.text)+'</span></div>';}).join('')+
+    '</div></div>';
+}
+
+// ── 4. Decision Readiness ──
+function buildDecisionReadiness(d){
+  var sal=d.salary||{},wk=d.work||{},ex=d.exit||{},oth=d.other||{};
+  var ready=[],needs=[],unknown=[];
+
+  function cat(label,val,isUnclear){
+    if(!val) unknown.push(label);
+    else if(isUnclear||(typeof val==='string'&&(val.indexOf('Mentioned')===0||val.indexOf('not specified')!==-1))) needs.push(label);
+    else ready.push(label);
+  }
+  cat('Annual CTC',      sal.annualFixed);
+  cat('Monthly pay',     sal.monthlyFixed||sal.monthlyGross);
+  cat('Basic salary',    sal.basic);
+  cat('PF contribution', sal.pf);
+  cat('Health insurance',oth.insurance);
+  cat('Leave policy',    oth.leaves);
+  cat('Work mode',       wk.mode);
+  cat('Working hours',   wk.hours);
+  cat('Notice period',   ex.notice,  ex.notice  &&ex.notice.indexOf('not specified')!==-1);
+  cat('Probation',       ex.probation,ex.probation&&ex.probation.indexOf('not specified')!==-1);
+  cat('Variable pay',    sal.variable,sal.variableUnclear);
+  cat('Bond / Lock-in',  ex.bond,    ex.bond    &&ex.bond.indexOf('not specified')!==-1);
+
+  function chip(l,cls){return'<div class="dr-chip '+cls+'">'+esc(l)+'</div>';}
+  var html='<div class="dr-hd">Is this offer decision-ready?</div>';
+
+  if(ready.length)
+    html+='<div class="dr-group"><div class="dr-group-lbl rdy"><div class="dr-gdot rdy"></div>Ready — clearly stated</div>'+
+          '<div class="dr-chips">'+ready.map(function(x){return chip(x,'rdy');}).join('')+'</div></div>';
+
+  if(needs.length)
+    html+='<div class="dr-group"><div class="dr-group-lbl clr"><div class="dr-gdot clr"></div>Needs clarification — mentioned but incomplete</div>'+
+          '<div class="dr-chips">'+needs.map(function(x){return chip(x,'clr');}).join('')+'</div></div>';
+
+  if(unknown.length)
+    html+='<div class="dr-group"><div class="dr-group-lbl unk"><div class="dr-gdot unk"></div>Not stated — ask HR or check employment agreement</div>'+
+          '<div class="dr-chips">'+unknown.map(function(x){return chip(x,'unk');}).join('')+'</div></div>';
+
+  return html;
+}
+
+function renderDet(){
+  var d=APP.data;if(!d)return;
+  var sal=d.salary||{},wk=d.work||{},ex=d.exit||{},oth=d.other||{};
+  var chk=d.checklist||{};
+  var emails=buildEmails(d);
+  APP.activeEmail=0;
+
+  var found=(chk.found||[]).map(function(x,i){return'<div class="ci fd" style="animation-delay:'+(0.04+i*.05)+'s"><span style="flex-shrink:0">✓</span><span>'+esc(x)+'</span></div>';}).join('');
+  var unc=(chk.unclear||[]).map(function(x,i){return'<div class="ci uc" style="animation-delay:'+(0.04+i*.05)+'s"><span style="flex-shrink:0">⚠</span><span>'+esc(x)+' — amount or duration not specified</span></div>';}).join('');
+  var mis=(chk.missing||[]).map(function(x,i){return'<div class="ci ms" style="animation-delay:'+(0.04+i*.05)+'s"><span style="flex-shrink:0">○</span><span>'+esc(x)+'</span></div>';}).join('');
+
+  // Email tabs
+  var tabs=emails.map(function(e,i){return'<button class="etab'+(i===0?' on':'')+'\" onclick="switchEmail('+i+',this)">'+esc(e.icon+' '+e.label)+'</button>';}).join('');
+
+  function emailCard(e){
+    return'<div class="email-card">'+
+      '<div class="email-meta">'+
+      '<div class="email-meta-lbl">To</div><div class="email-meta-val">'+esc(e.to)+'</div>'+
+      '<div class="email-meta-lbl">Subject</div><div class="email-meta-val">'+esc(e.subject)+'</div>'+
+      '</div>'+
+      '<div class="email-body" id="email-body">'+esc(e.body)+'</div>'+
+      '<div class="email-footer">'+
+      '<button class="ecopy" id="ecopy-btn" onclick="copyEmail()">Copy email</button>'+
+      '<button class="edl" onclick="downloadEmail()">Download .txt</button>'+
+      '</div>'+
+      '</div>';
+  }
+
+  document.getElementById('det-inner').innerHTML=
+    '<button class="bk" onclick="showScreen(\'s-wow\')">← Back to snapshot</button>'+
+    '<div class="id-bar">'+(d.company?'<div class="id-co">'+esc(d.company)+'</div>':'')+
+    '<div class="id-chips">'+(d.location?'<div class="id-chip">📍 '+esc(d.location)+'</div>':'')+(d.role?'<div class="id-chip">👤 '+esc(d.role)+'</div>':'')+'</div></div>'+
+
+    buildHeroClarity(d)+
+
+    '<div class="sec"><div class="sec-h"><span class="sec-n">01</span><span class="sec-t">Salary &amp; Payouts</span></div>'+
+    dr('Annual CTC',sal.annualFixed,.04)+
+    dr('Monthly gross (calc.)',sal.monthlyGross?fmtINR(sal.monthlyGross):null,.07)+
+    drTakeHome(d.tax?fmtINR(d.tax.takeHome):null,.09)+
+    dr('Monthly fixed (stated)',sal.monthlyFixed,.12)+
+    dr('Basic salary',sal.basic,.15)+
+    dr('HRA',sal.hra,.18)+
+    dr('Special allowance',sal.specialAllowance,.21)+
+    dr('Variable / Performance pay',sal.variable,.24)+
+    dr('Variable pay %',sal.variablePct,.27)+
+    dr('PF employee contribution',sal.pf,.30)+
+    dr('Gratuity',sal.gratuity,.33)+
+    dr('Stock options (ESOP/RSU)',sal.esop,.36)+
+    '</div>'+
+
+    '<hr class="divider"><div class="sec"><div class="sec-h"><span class="sec-n">02</span><span class="sec-t">Work Setup</span></div>'+
+    dr('Work mode',wk.mode,.04)+dr('Working hours',wk.hours,.08)+dr('Shift timings',wk.shift,.12)+dr('Weekend policy',wk.weekends,.16)+dr('Night shift',wk.nightShift,.20)+dr('Transport / Cab',wk.transport,.24)+
+    '</div>'+
+
+    '<hr class="divider"><div class="sec"><div class="sec-h"><span class="sec-n">03</span><span class="sec-t">Exit &amp; Separation</span></div>'+
+    dr('Probation period',ex.probation,.04)+dr('Notice period',ex.notice,.08)+dr('Bond / Lock-in duration',ex.bond,.12)+dr('Bond recovery amount',ex.bondAmt,.16)+dr('Termination',ex.termination,.20)+
+    '</div>'+
+
+    '<hr class="divider"><div class="sec"><div class="sec-h"><span class="sec-n">04</span><span class="sec-t">Other Benefits</span></div>'+
+    dr('Joining date',oth.startDate,.04)+dr('Medical insurance',oth.insurance,.08)+dr('Leave policy',oth.leaves,.12)+dr('Food / Meal benefit',oth.food,.16)+dr('Laptop / Equipment',oth.laptop,.20)+dr('Relocation support',oth.relocation,.24)+
+    '</div>'+
+
+    '<hr class="divider"><div class="sec"><div class="sec-h"><span class="sec-n">05</span></div>'+
+    buildDecisionReadiness(d)+
+    '</div>'+
+
+    '<hr class="divider">'+
+    '<div class="email-section">'+
+    '<div class="sec-h"><span class="sec-n">06</span><span class="sec-t">Ready-to-Send Email Drafts</span></div>'+
+    '<p style="font-size:12px;color:var(--muted);margin-bottom:16px;line-height:1.65">Pre-filled with your offer details. Edit as needed before sending. These are neutral and professional — they do not imply any accusation.</p>'+
+    '<div class="email-tabs" id="email-tabs">'+tabs+'</div>'+
+    '<div id="email-card">'+emailCard(emails[0])+'</div>'+
+    '</div>'+
+
+    '<div class="reassurance">Most offers look incomplete at first glance. <strong>The goal isn\'t to reject — it\'s to clarify before committing.</strong></div>'+
+
+    '<div class="disc-txt"><strong>Legal notice:</strong> OfferLens uses pattern-based text extraction. Extracted figures should be verified against the original document. Nothing here constitutes legal, HR, tax, or financial advice. No data is stored or transmitted.</div>';
+
+  // Store emails globally for switching
+  window._EMAILS=emails;
+}
+
+function switchEmail(idx,btn){
+  APP.activeEmail=idx;
+  document.querySelectorAll('.etab').forEach(function(b){b.classList.remove('on');});
+  btn.classList.add('on');
+  var emails=window._EMAILS||[];
+  var e=emails[idx];
+  if(e){
+    var card=document.getElementById('email-card');
+    if(card){
+      var body=card.querySelector('#email-body');
+      if(body)body.textContent=e.body;
+      var meta=card.querySelectorAll('.email-meta-val');
+      if(meta[0])meta[0].textContent=e.to;
+      if(meta[1])meta[1].textContent=e.subject;
+      var btn2=document.getElementById('ecopy-btn');
+      if(btn2){btn2.textContent='Copy email';btn2.classList.remove('done');}
+    }
+  }
+}
+function copyEmail(){
+  var emails=window._EMAILS||[];
+  var e=emails[APP.activeEmail];if(!e)return;
+  var full='To: '+e.to+'\nSubject: '+e.subject+'\n\n'+e.body;
+
+  function toastOk(){
+    var b=document.getElementById('ecopy-btn');
+    if(b){b.textContent='✓ Copied!';b.classList.add('done');setTimeout(function(){b.textContent='Copy email';b.classList.remove('done');},2400);}
+  }
+  function fallback(){
+    try{
+      var ta=document.createElement('textarea');
+      ta.value=full; ta.setAttribute('readonly',''); ta.style.position='fixed'; ta.style.left='-9999px';
+      document.body.appendChild(ta);
+      ta.select(); ta.setSelectionRange(0, ta.value.length);
+      var ok=document.execCommand('copy');
+      document.body.removeChild(ta);
+      if(ok) toastOk();
+      else setErr('Copy failed. Please select the email text and copy manually.');
+    }catch(_e){
+      setErr('Copy is blocked by the browser. Please select the email text and copy manually.');
+    }
+  }
+
+  if(navigator.clipboard && window.isSecureContext){
+    navigator.clipboard.writeText(full).then(toastOk).catch(fallback);
+  }else{
+    fallback();
+  }
+}
+function downloadEmail(){
+  var emails=window._EMAILS||[];
+  var e=emails[APP.activeEmail];if(!e)return;
+  var full='To: '+e.to+'\nSubject: '+e.subject+'\n\n'+e.body;
+  var blob=new Blob([full],{type:'text/plain;charset=utf-8'});
+  var url=URL.createObjectURL(blob);
+  var a=document.createElement('a');
+  a.href=url;
+  a.download=(e.label||'email').replace(/\s+/g,'_')+'.txt';
+  a.style.display='none';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(function(){URL.revokeObjectURL(url);},1500);
+}
+
+
+// ════════════════════════════════════════════════════════════════════
+// UTILS
+// ════════════════════════════════════════════════════════════════════
+function esc(s){if(!s&&s!==0)return'';return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+showScreen('s-home');
+</script>
+</body>
+</html>
